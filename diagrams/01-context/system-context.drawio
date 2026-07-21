@@ -1,0 +1,23 @@
+<mxfile host="app.diagrams.net" modified="2026-07-21T00:00:00.000Z" agent="ChatGPT" version="24.7.17">
+  <diagram id="system-context" name="System Context">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title" value="System Context Diagram — نظام إدارة الطلبات عالية الحمل" style="text;html=1;align=center;verticalAlign=middle;fontSize=22;fontStyle=1" vertex="1" parent="1"><mxGeometry x="250" y="20" width="670" height="40" as="geometry"/></mxCell>
+        <mxCell id="system" value="&lt;b&gt;نظام إدارة الطلبات عالية الحمل (HLRMS)&lt;/b&gt;&lt;br&gt;&lt;br&gt;يستقبل الطلبات، يتحقق منها، ينظمها عبر RabbitMQ، يوزعها على Workers، ويتابع حالتها ونتائجها ومؤشرات أدائها." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=15;" vertex="1" parent="1"><mxGeometry x="390" y="250" width="390" height="190" as="geometry"/></mxCell>
+        <mxCell id="client" value="&lt;b&gt;الأنظمة العميلة&lt;/b&gt;&lt;br&gt;تطبيق Android التجريبي&lt;br&gt;موقع ويب&lt;br&gt;أنظمة خارجية" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" vertex="1" parent="1"><mxGeometry x="40" y="260" width="230" height="150" as="geometry"/></mxCell>
+        <mxCell id="admin" value="&lt;b&gt;مسؤول/مشغل النظام&lt;/b&gt;&lt;br&gt;يراقب الأداء والطوابير والـWorkers ويعالج الرسائل الفاشلة" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;" vertex="1" parent="1"><mxGeometry x="460" y="590" width="260" height="120" as="geometry"/></mxCell>
+        <mxCell id="external" value="&lt;b&gt;خدمات خارجية اختيارية&lt;/b&gt;&lt;br&gt;بريد، رسائل، دفع، تخزين، أو أي خدمة ينفذ Worker طلبًا باتجاهها" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;" vertex="1" parent="1"><mxGeometry x="900" y="260" width="230" height="150" as="geometry"/></mxCell>
+        <mxCell id="monitor" value="&lt;b&gt;منظومة المراقبة&lt;/b&gt;&lt;br&gt;Prometheus / Grafana&lt;br&gt;تجمع المقاييس وتعرضها" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;" vertex="1" parent="1"><mxGeometry x="855" y="560" width="250" height="120" as="geometry"/></mxCell>
+        <mxCell id="e1" value="إرسال طلب / استعلام عن الحالة" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="client" target="system"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e2" value="حالة الطلب والنتيجة" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="system" target="client"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e3" value="إدارة ومراقبة وإعادة تشغيل" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="admin" target="system"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e4" value="تنفيذ عمليات خارجية" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="system" target="external"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e5" value="نتيجة أو خطأ" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="external" target="system"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e6" value="Metrics / Health" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="system" target="monitor"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e7" value="لوحات وتنبيهات" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="monitor" target="admin"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
