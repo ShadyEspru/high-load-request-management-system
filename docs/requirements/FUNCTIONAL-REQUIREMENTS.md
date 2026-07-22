@@ -1,189 +1,257 @@
-# Functional Requirements
+# المتطلبات الوظيفية  
+## Functional Requirements
 
-## 1. Introduction
+## 1. المقدمة
 
-This document defines the functional requirements of the High-Load Request Management System (HLRMS).
+تحدد هذه الوثيقة المتطلبات الوظيفية لنظام إدارة الطلبات عالية الحمل  
+**High-Load Request Management System (HLRMS)**.
 
-The requirements describe **what the system must do** from a functional perspective without describing the implementation details or the technologies used.
+تصف هذه المتطلبات **ما يجب أن يفعله النظام** من الناحية الوظيفية، دون الدخول في تفاصيل التنفيذ أو التقنيات المستخدمة.
 
-Each requirement has a unique identifier (FR-XXX) to simplify tracing, implementation, testing, and maintenance.
-
----
-
-# 2. Functional Requirements
-
-## 2.1 Request Submission
-
-### FR-001 – Submit Request
-
-The system shall allow external client systems to submit a new request through the public REST API.
+يحمل كل متطلب معرفًا فريدًا بالشكل `FR-XXX` لتسهيل التتبع، والتنفيذ، والاختبار، والصيانة.
 
 ---
 
-### FR-002 – Generate Request Identifier
+# 2. المتطلبات الوظيفية
 
-The system shall generate a globally unique Request ID for every accepted request.
+## 2.1 إرسال الطلبات  
+### Request Submission
 
----
+### FR-001 – إرسال طلب جديد  
+#### Submit Request
 
-### FR-003 – Store Request
-
-The system shall store the received request before processing begins.
-
----
-
-### FR-004 – Validate Request
-
-The system shall validate the request data before accepting it for processing.
+يجب أن يسمح النظام للأنظمة العميلة الخارجية بإرسال طلب جديد من خلال واجهة `REST API` العامة.
 
 ---
 
-### FR-005 – Reject Invalid Request
+### FR-002 – إنشاء معرف للطلب  
+#### Generate Request Identifier
 
-The system shall reject invalid requests and return an appropriate error message describing the validation failure.
-
----
-
-## 2.2 Request Lifecycle
-
-### FR-006 – Initialize Request Status
-
-The system shall assign the status RECEIVED when a request is first received.
+يجب أن ينشئ النظام معرف طلب فريدًا عالميًا `Request ID` لكل طلب يتم قبوله.
 
 ---
 
-### FR-007 – Update Request Status
+### FR-003 – تخزين الطلب  
+#### Store Request
 
-The system shall update the request status whenever the request moves to another processing stage.
-
----
-
-### FR-008 – Record Status History
-
-The system shall maintain the history of status changes for every request.
+يجب أن يخزن النظام الطلب المستلم قبل بدء معالجته.
 
 ---
 
-## 2.3 Queue Management
+### FR-004 – التحقق من صحة الطلب  
+#### Validate Request
 
-### FR-009 – Queue Accepted Requests
-
-The system shall place accepted requests into the appropriate message queue.
-
----
-
-### FR-010 – Support Multiple Queues
-
-The system shall support multiple queues for different request types or priorities.
+يجب أن يتحقق النظام من صحة بيانات الطلب قبل قبوله للمعالجة.
 
 ---
 
-### FR-011 – Preserve Requests
+### FR-005 – رفض الطلب غير الصحيح  
+#### Reject Invalid Request
 
-The system shall ensure that accepted requests are not lost due to temporary service interruptions.
-
----
-
-### FR-012 – Prioritize Requests
-
-The system shall support processing requests based on predefined priority levels.
+يجب أن يرفض النظام الطلبات غير الصحيحة، وأن يعيد رسالة خطأ مناسبة توضح سبب فشل التحقق.
 
 ---
 
-## 2.4 Request Processing
+## 2.2 دورة حياة الطلب  
+### Request Lifecycle
 
-### FR-013 – Process Requests
+### FR-006 – تعيين الحالة الابتدائية للطلب  
+#### Initialize Request Status
 
-The system shall allow worker services to retrieve requests from the queues and process them.
-
----
-
-### FR-014 – Execute One Request
-
-The system shall ensure that each processing attempt is associated with a single request.
+يجب أن يعيّن النظام الحالة `RECEIVED` عند استلام الطلب لأول مرة.
 
 ---
 
-### FR-015 – Store Processing Result
+### FR-007 – تحديث حالة الطلب  
+#### Update Request Status
 
-The system shall store the final processing result after execution.
-
----
-
-### FR-016 – Mark Successful Requests
-
-The system shall assign the SUCCEEDED status after successful execution.
+يجب أن يحدّث النظام حالة الطلب عند انتقاله إلى مرحلة معالجة جديدة.
 
 ---
 
-### FR-017 – Handle Processing Failure
+### FR-008 – تسجيل سجل الحالات  
+#### Record Status History
 
-The system shall assign the FAILED status whenever a processing attempt fails.
-
----
-
-## 2.5 Retry Management
-
-### FR-018 – Retry Failed Requests
-
-The system shall support automatic retry for recoverable processing failures.
+يجب أن يحتفظ النظام بسجل كامل لتغيّرات حالة كل طلب.
 
 ---
 
-### FR-019 – Retry Limit
+## 2.3 إدارة الطوابير  
+### Queue Management
 
-The system shall stop retrying after the configured maximum number of attempts.
+### FR-009 – إضافة الطلبات المقبولة إلى الطابور  
+#### Queue Accepted Requests
 
----
-
-### FR-020 – Dead Letter Queue
-
-The system shall move requests that exceed the retry limit to the Dead Letter Queue (DLQ).
+يجب أن يضع النظام الطلبات المقبولة في طابور الرسائل المناسب.
 
 ---
 
-## 2.6 Request Tracking
+### FR-010 – دعم عدة طوابير  
+#### Support Multiple Queues
 
-### FR-021 – Query Request Status
-
-The system shall allow client systems to retrieve the current status of a request.
-
----
-
-### FR-022 – Query Request Details
-
-The system shall allow authorized users to retrieve the complete details of a request.
+يجب أن يدعم النظام عدة طوابير لمعالجة أنواع الطلبات المختلفة أو مستويات الأولوية المختلفة.
 
 ---
 
-### FR-023 – Search Requests
+### FR-011 – الحفاظ على الطلبات  
+#### Preserve Requests
 
-The system shall support searching requests using predefined filtering criteria.
-
----
-
-## 2.7 Monitoring
-
-### FR-024 – Collect Metrics
-
-The system shall collect operational metrics related to requests, queues, and workers.
+يجب أن يضمن النظام عدم فقدان الطلبات المقبولة بسبب الانقطاعات المؤقتة في الخدمات.
 
 ---
 
-### FR-025 – Expose Monitoring Data
+### FR-012 – تحديد أولويات الطلبات  
+#### Prioritize Requests
 
-The system shall expose monitoring metrics for external monitoring platforms.
+يجب أن يدعم النظام معالجة الطلبات وفق مستويات أولوية محددة مسبقًا.
 
 ---
 
-# 3. Requirement Traceability
+## 2.4 معالجة الطلبات  
+### Request Processing
 
-| Requirement | Related Module |
-|-------------|----------------|
-| FR-001 – FR-005 | Request API |
-| FR-006 – FR-008 | Request Lifecycle |
-| FR-009 – FR-012 | Queue Management |
-| FR-013 – FR-017 | Worker Service |
-| FR-018 – FR-020 | Retry Manager |
-| FR-021 – FR-023 | Request Tracking |
-| FR-024 – FR-025 | Monitoring |
+### FR-013 – معالجة الطلبات  
+#### Process Requests
+
+يجب أن يسمح النظام لخدمات التنفيذ `Worker Services` باسترجاع الطلبات من الطوابير ومعالجتها.
+
+---
+
+### FR-014 – ربط محاولة التنفيذ بطلب واحد  
+#### Execute One Request
+
+يجب أن يضمن النظام ارتباط كل محاولة معالجة بطلب واحد فقط.
+
+---
+
+### FR-015 – تخزين نتيجة المعالجة  
+#### Store Processing Result
+
+يجب أن يخزن النظام النتيجة النهائية للمعالجة بعد انتهاء التنفيذ.
+
+---
+
+### FR-016 – تعيين الطلبات الناجحة  
+#### Mark Successful Requests
+
+يجب أن يعيّن النظام الحالة `SUCCEEDED` بعد نجاح تنفيذ الطلب.
+
+---
+
+### FR-017 – معالجة فشل التنفيذ  
+#### Handle Processing Failure
+
+يجب أن يعيّن النظام الحالة `FAILED` عند فشل إحدى محاولات معالجة الطلب.
+
+---
+
+## 2.5 إدارة إعادة المحاولة  
+### Retry Management
+
+### FR-018 – إعادة محاولة الطلبات الفاشلة  
+#### Retry Failed Requests
+
+يجب أن يدعم النظام إعادة المحاولة تلقائيًا عند حدوث أخطاء معالجة قابلة للاسترداد.
+
+---
+
+### FR-019 – تحديد الحد الأقصى للمحاولات  
+#### Retry Limit
+
+يجب أن يتوقف النظام عن إعادة المحاولة بعد بلوغ الحد الأقصى المحدد لعدد المحاولات.
+
+---
+
+### FR-020 – نقل الطلبات إلى طابور الرسائل الميتة  
+#### Dead Letter Queue
+
+يجب أن ينقل النظام الطلبات التي تجاوزت حد إعادة المحاولة إلى طابور الرسائل الميتة  
+`Dead Letter Queue (DLQ)`.
+
+---
+
+## 2.6 تتبع الطلبات  
+### Request Tracking
+
+### FR-021 – الاستعلام عن حالة الطلب  
+#### Query Request Status
+
+يجب أن يسمح النظام للأنظمة العميلة باسترجاع الحالة الحالية لطلب محدد.
+
+---
+
+### FR-022 – الاستعلام عن تفاصيل الطلب  
+#### Query Request Details
+
+يجب أن يسمح النظام للمستخدمين المصرح لهم باسترجاع التفاصيل الكاملة لطلب محدد.
+
+---
+
+### FR-023 – البحث في الطلبات  
+#### Search Requests
+
+يجب أن يدعم النظام البحث في الطلبات باستخدام معايير تصفية محددة مسبقًا.
+
+---
+
+## 2.7 المراقبة  
+### Monitoring
+
+### FR-024 – جمع مؤشرات الأداء  
+#### Collect Metrics
+
+يجب أن يجمع النظام مؤشرات تشغيلية مرتبطة بالطلبات، والطوابير، ووحدات التنفيذ `Workers`.
+
+---
+
+### FR-025 – إتاحة بيانات المراقبة  
+#### Expose Monitoring Data
+
+يجب أن يتيح النظام مؤشرات المراقبة لمنصات المراقبة الخارجية.
+
+---
+
+## 2.8 إدارة إعدادات النظام  
+### Configuration Management
+
+### FR-026 – عرض إعدادات النظام  
+#### View System Configuration
+
+يجب أن يسمح النظام لمسؤول النظام بعرض الإعدادات التشغيلية القابلة للإدارة.
+
+---
+
+### FR-027 – تعديل إعدادات النظام  
+#### Modify System Configuration
+
+يجب أن يسمح النظام لمسؤول النظام المخول بتعديل الإعدادات التشغيلية المدعومة.
+
+---
+
+### FR-028 – التحقق من الإعدادات  
+#### Validate Configuration
+
+يجب أن يتحقق النظام من صحة قيم الإعدادات الجديدة قبل حفظها أو تطبيقها.
+
+---
+
+### FR-029 – تسجيل تغييرات الإعدادات  
+#### Record Configuration Changes
+
+يجب أن يسجل النظام عمليات تعديل الإعدادات، مع تحديد وقت التعديل، والمستخدم المسؤول، والقيمة السابقة، والقيمة الجديدة.
+
+---
+
+# 3. مصفوفة تتبع المتطلبات  
+## Requirement Traceability Matrix
+
+| المتطلبات | الوحدة المرتبطة |
+|---|---|
+| FR-001 إلى FR-005 | واجهة الطلبات `Request API` |
+| FR-006 إلى FR-008 | دورة حياة الطلب `Request Lifecycle` |
+| FR-009 إلى FR-012 | إدارة الطوابير `Queue Management` |
+| FR-013 إلى FR-017 | خدمة التنفيذ `Worker Service` |
+| FR-018 إلى FR-020 | إدارة إعادة المحاولة `Retry Manager` |
+| FR-021 إلى FR-023 | تتبع الطلبات `Request Tracking` |
+| FR-024 إلى FR-025 | المراقبة `Monitoring` |
+| FR-026 إلى FR-029 | إدارة الإعدادات `Configuration Management` |
