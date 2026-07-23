@@ -1,0 +1,79 @@
+<mxfile host="Electron" agent="ChatGPT">
+  <diagram id="C4-Level-2---Container" name="C4 Level 2 - Container">
+    <mxGraphModel dx="1585" dy="963" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="2" parent="1" style="text;html=1;align=center;verticalAlign=middle;fontSize=28;fontStyle=1;fontFamily=Arial;" value="HLRMS مخطط الحاويات لنظام" vertex="1">
+          <mxGeometry height="50" width="1000" x="300" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="3" parent="1" style="text;html=1;align=center;verticalAlign=middle;fontSize=16;fontColor=#5F6B7A;fontFamily=Arial;" value="C4 Model - Level 2: Container Diagram" vertex="1">
+          <mxGeometry height="35" width="800" x="400" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#91A4C3;dashed=1;dashPattern=8 6;arcSize=10;" value="حدود نظام HLRMS" vertex="1">
+          <mxGeometry height="760" width="1260" x="170" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;arcSize=15;fontSize=16;fontStyle=1;fontFamily=Arial;fillColor=#FFF4DB;strokeColor=#D99000;" value="&lt;b&gt;النظام العميل&lt;/b&gt;&lt;br&gt;Client System" vertex="1">
+          <mxGeometry height="150" width="130" x="20" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;arcSize=15;fontSize=16;fontStyle=1;fontFamily=Arial;fillColor=#E8F8F1;strokeColor=#1B8F67;" value="&lt;b&gt;منصة المراقبة&lt;/b&gt;&lt;br&gt;Monitoring" vertex="1">
+          <mxGeometry height="150" width="130" x="1450" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;arcSize=12;fontSize=15;fontFamily=Arial;fillColor=#EAF2FF;strokeColor=#3867D6;" value="&lt;b&gt;API Gateway&lt;/b&gt;&lt;br&gt;&lt;font color=&#39;#3867D6&#39;&gt;Spring Boot&lt;/font&gt;&lt;br&gt;&lt;br&gt;نقطة الدخول العامة&lt;br&gt;Authentication &amp;amp; Rate Limiting" vertex="1">
+          <mxGeometry height="165" width="260" x="250" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;arcSize=12;fontSize=15;fontFamily=Arial;fillColor=#EAF2FF;strokeColor=#3867D6;" value="&lt;b&gt;Request Service&lt;/b&gt;&lt;br&gt;&lt;font color=&#39;#3867D6&#39;&gt;Spring Boot&lt;/font&gt;&lt;br&gt;&lt;br&gt;التحقق والتخزين&lt;br&gt;إدارة دورة حياة الطلب" vertex="1">
+          <mxGeometry height="165" width="260" x="590" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="9" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;arcSize=12;fontSize=15;fontFamily=Arial;fillColor=#F3EAFE;strokeColor=#8E44AD;" value="&lt;b&gt;Worker Service&lt;/b&gt;&lt;br&gt;&lt;font color=&#39;#8E44AD&#39;&gt;Spring Boot&lt;/font&gt;&lt;br&gt;&lt;br&gt;استهلاك الرسائل&lt;br&gt;تنفيذ الطلبات" vertex="1">
+          <mxGeometry height="165" width="260" x="930" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="10" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;arcSize=12;fontSize=15;fontFamily=Arial;fillColor=#E8F8F1;strokeColor=#1B8F67;" value="&lt;b&gt;PostgreSQL&lt;/b&gt;&lt;br&gt;&lt;font color=&#39;#1B8F67&#39;&gt;Database&lt;/font&gt;&lt;br&gt;&lt;br&gt;الطلبات والحالات&lt;br&gt;المحاولات والنتائج" vertex="1">
+          <mxGeometry height="165" width="260" x="250" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="11" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;arcSize=12;fontSize=15;fontFamily=Arial;fillColor=#FFF4DB;strokeColor=#D99000;" value="&lt;b&gt;RabbitMQ&lt;/b&gt;&lt;br&gt;&lt;font color=&#39;#D99000&#39;&gt;Message Broker&lt;/font&gt;&lt;br&gt;&lt;br&gt;Main Queues&lt;br&gt;Retry Queues &amp;amp; DLQ" vertex="1">
+          <mxGeometry height="165" width="260" x="590" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="12" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;arcSize=12;fontSize=15;fontFamily=Arial;fillColor=#FDECEC;strokeColor=#C94C4C;" value="&lt;b&gt;Redis&lt;/b&gt;&lt;br&gt;&lt;font color=&#39;#C94C4C&#39;&gt;Cache&lt;/font&gt;&lt;br&gt;&lt;br&gt;Rate Limiting&lt;br&gt;Idempotency &amp;amp; Hot Data" vertex="1">
+          <mxGeometry height="165" width="260" x="930" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;arcSize=12;fontSize=15;fontFamily=Arial;fillColor=#EEF1F5;strokeColor=#66788A;" value="&lt;b&gt;Metrics Endpoint&lt;/b&gt;&lt;br&gt;&lt;font color=&#39;#66788A&#39;&gt;Actuator / Micrometer&lt;/font&gt;&lt;br&gt;&lt;br&gt;Health &amp;amp; Metrics" vertex="1">
+          <mxGeometry height="130" width="220" x="1140" y="710" as="geometry" />
+        </mxCell>
+        <mxCell id="20" edge="1" parent="1" source="5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#51627C;strokeWidth=2;fontSize=13;fontFamily=Arial;" target="7" value="HTTPS / JSON">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="21" edge="1" parent="1" source="7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#51627C;strokeWidth=2;fontSize=13;fontFamily=Arial;" target="8" value="REST">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="22" edge="1" parent="1" source="8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#51627C;strokeWidth=2;fontSize=13;fontFamily=Arial;" target="9" value="Async Message">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="23" edge="1" parent="1" source="8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#51627C;strokeWidth=2;fontSize=13;fontFamily=Arial;" target="10" value="JPA">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="24" edge="1" parent="1" source="8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#51627C;strokeWidth=2;fontSize=13;fontFamily=Arial;" target="11" value="Publish">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="25" edge="1" parent="1" source="11" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#51627C;strokeWidth=2;fontSize=13;fontFamily=Arial;" target="9" value="Consume / ACK">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="26" edge="1" parent="1" source="9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#51627C;strokeWidth=2;fontSize=13;fontFamily=Arial;" target="12" value="Cache">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="27" edge="1" parent="1" source="10" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#51627C;strokeWidth=2;fontSize=13;fontFamily=Arial;" target="11" value="Outbox / State">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="28" edge="1" parent="1" source="11" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#51627C;strokeWidth=2;fontSize=13;fontFamily=Arial;" target="12" value="Retry Metadata">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="29" edge="1" parent="1" source="9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#51627C;strokeWidth=2;fontSize=13;fontFamily=Arial;" target="13" value="Expose Metrics">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="30" edge="1" parent="1" source="13" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#51627C;strokeWidth=2;fontSize=13;fontFamily=Arial;" target="6" value="Scrape">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
