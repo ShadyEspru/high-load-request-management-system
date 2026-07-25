@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -22,7 +23,15 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "requests")
+@Table(
+    name = "requests",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uk_requests_idempotency_key",
+            columnNames = "idempotency_key"
+        )
+    }
+)
 @Getter
 @Setter
 @Builder
@@ -87,8 +96,25 @@ public class RequestEntity {
     private Instant completedAt;
 
     @Version
-    @Column(name = "version", nullable = false)
+    @Column(
+        name = "version", nullable = false
+    )
     private Long version;
+
+    @Column(
+    name = "idempotency_key",
+    nullable = false,
+    unique = true,
+    length = 100
+    )
+    private String idempotencyKey;
+
+    @Column(
+        name = "idempotency_fingerprint",
+        nullable = false,
+        length = 64
+    )
+    private String idempotencyFingerprint;
 
     @PrePersist
     void beforeInsert() {

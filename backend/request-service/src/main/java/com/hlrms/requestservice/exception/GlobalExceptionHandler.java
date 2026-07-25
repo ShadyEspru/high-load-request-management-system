@@ -1,5 +1,6 @@
 package com.hlrms.requestservice.exception;
 
+import com.hlrms.requestservice.exception.IdempotencyConflictException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -7,6 +8,14 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import jakarta.validation.ConstraintViolationException;
+import org.springframework.context.MessageSourceResolvable;
+import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -66,15 +75,85 @@ public class GlobalExceptionHandler {
             null
         );
     }
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<Map<String, Object>>
+    handleHandlerMethodValidationException(
+        HandlerMethodValidationException exception
+    ) {
+        Map<String, String> validationErrors =
+            new LinkedHashMap<>();
+
+        exception.getParameterValidationResults()
+            .forEach(result -> {
+                String parameterName = result
+                    .getMethodParameter()
+                    .getParameterName();
+
+                if (parameterName == null) {
+                    parameterName = "parameter";
+                }
+
+                String message = result
+                    .getResolvableErrors()
+                    .stream()
+                    .map(MessageSourceResolvable::getDefaultMessage)
+                    .filter(value -> value != null)
+                    .findFirst()
+                    .orElse("Invalid value");
+
+                validationErrors.put(
+                    parameterName,
+                    message
+                );
+            });
+
+        return buildErrorResponse(
+            HttpStatus.BAD_REQUEST,
+            "Validation failed",
+            validationErrors
+        );
+    }
+
+    @ExceptionHandler(IdempotencyConflictException.class)
+    public ResponseEntity<Map<String, Object>>
+    handleIdempotencyConflict(
+        IdempotencyConflictException exception
+    ) {
+        return buildErrorResponse(
+            HttpStatus.CONFLICT,
+            exception.getMessage(),
+            null
+        );
+    }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>>
-    handleUnexpectedException(Exception exception) {
-
+    handleGenericException(
+        Exception exception
+    ) {
         return buildErrorResponse(
             HttpStatus.INTERNAL_SERVER_ERROR,
             "An unexpected error occurred",
             null
+        );
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<Map<String, Object>>
+    handleMissingRequestHeader(
+        MissingRequestHeaderException exception
+    ) {
+        Map<String, String> details = new LinkedHashMap<>();
+
+        details.put(
+            exception.getHeaderName(),
+            exception.getHeaderName() + " header is required"
+        );
+
+        return buildErrorResponse(
+            HttpStatus.BAD_REQUEST,
+            "Required request header is missing",
+            details
         );
     }
 
