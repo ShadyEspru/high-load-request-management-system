@@ -7,6 +7,7 @@ import java.util.UUID;
 
 public record RequestResponseDto(
     UUID id,
+    String idempotencyKey,
     String requestType,
     String payload,
     RequestStatus status,
