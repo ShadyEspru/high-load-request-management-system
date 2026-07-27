@@ -1,5 +1,6 @@
 package com.hlrms.requestservice.service;
 
+import com.hlrms.requestservice.messaging.RequestEventPublisher;
 import com.hlrms.requestservice.dto.CreateRequestDto;
 import com.hlrms.requestservice.dto.CreateRequestResult;
 import com.hlrms.requestservice.dto.PageResponseDto;
@@ -29,8 +30,8 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class RequestServiceImpl implements RequestService {
-
     private final RequestRepository requestRepository;
+    private final RequestEventPublisher requestEventPublisher;
 
     @Override
     public CreateRequestResult createRequest(
@@ -73,9 +74,11 @@ public class RequestServiceImpl implements RequestService {
 
         try {
             RequestEntity savedRequest =
-                requestRepository.saveAndFlush(
-                    requestEntity
-                );
+                requestRepository.saveAndFlush(requestEntity);
+
+            requestEventPublisher.publishRequestCreated(
+                savedRequest.getId()
+            );
 
             return new CreateRequestResult(
                 toResponseDto(savedRequest),
@@ -84,11 +87,6 @@ public class RequestServiceImpl implements RequestService {
         } catch (
             DataIntegrityViolationException exception
         ) {
-            /*
-             * قد يصل طلبان بالمفتاح نفسه في الوقت نفسه.
-             * PostgreSQL يسمح بإنشاء سجل واحد فقط
-             * بسبب القيد الفريد على idempotency_key.
-             */
 
             RequestEntity concurrentRequest =
                 requestRepository

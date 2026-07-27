@@ -1,6 +1,7 @@
 package com.hlrms.requestservice.exception;
 
 import com.hlrms.requestservice.exception.IdempotencyConflictException;
+import com.hlrms.requestservice.exception.MessagePublishingException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -123,6 +124,22 @@ public class GlobalExceptionHandler {
             HttpStatus.CONFLICT,
             exception.getMessage(),
             null
+        );
+    }
+
+    @ExceptionHandler(MessagePublishingException.class)
+    public ResponseEntity<Map<String, Object>>
+    handleMessagePublishingException(
+        MessagePublishingException exception
+    ) {
+        return buildErrorResponse(
+            HttpStatus.SERVICE_UNAVAILABLE,
+            "Request was saved, but the processing event " +
+            "could not be published",
+            Map.of(
+                "reason",
+                exception.getMessage()
+            )
         );
     }
 
