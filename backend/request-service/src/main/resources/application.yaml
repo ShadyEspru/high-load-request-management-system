@@ -7,6 +7,25 @@ spring:
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
 
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:hlrms}
+    password: ${RABBITMQ_PASSWORD:hlrms_password}
+
+    publisher-confirm-type: correlated
+    publisher-returns: true
+
+    template:
+      mandatory: true
+
+      retry:
+        enabled: true
+        initial-interval: 1s
+        multiplier: 2
+        max-interval: 5s
+        max-attempts: 3
+
   jpa:
     hibernate:
       ddl-auto: update
