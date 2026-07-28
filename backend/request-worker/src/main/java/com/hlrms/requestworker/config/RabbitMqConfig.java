@@ -5,6 +5,7 @@ import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.support.converter.DefaultClassMapper;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.context.annotation.Bean;
@@ -26,13 +27,34 @@ public class RabbitMqConfig {
     }
 
     @Bean
-    public Queue requestProcessingQueue() {
-        return new Queue(
-            RabbitMqConstants.REQUEST_QUEUE,
+    public DirectExchange requestDeadLetterExchange() {
+        return new DirectExchange(
+            RabbitMqConstants.REQUEST_DEAD_LETTER_EXCHANGE,
             true,
-            false,
             false
         );
+    }
+
+    @Bean
+    public Queue requestProcessingQueue() {
+        return QueueBuilder
+            .durable(RabbitMqConstants.REQUEST_QUEUE)
+            .deadLetterExchange(
+                RabbitMqConstants.REQUEST_DEAD_LETTER_EXCHANGE
+            )
+            .deadLetterRoutingKey(
+                RabbitMqConstants.REQUEST_DEAD_LETTER_ROUTING_KEY
+            )
+            .build();
+    }
+
+    @Bean
+    public Queue requestDeadLetterQueue() {
+        return QueueBuilder
+            .durable(
+                RabbitMqConstants.REQUEST_DEAD_LETTER_QUEUE
+            )
+            .build();
     }
 
     @Bean
@@ -47,10 +69,26 @@ public class RabbitMqConfig {
     }
 
     @Bean
-    public DefaultClassMapper rabbitClassMapper() {
-        DefaultClassMapper classMapper = new DefaultClassMapper();
+    public Binding requestDeadLetterBinding(
+        Queue requestDeadLetterQueue,
+        DirectExchange requestDeadLetterExchange
+    ) {
+        return BindingBuilder
+            .bind(requestDeadLetterQueue)
+            .to(requestDeadLetterExchange)
+            .with(
+                RabbitMqConstants
+                    .REQUEST_DEAD_LETTER_ROUTING_KEY
+            );
+    }
 
-        Map<String, Class<?>> typeMappings = new HashMap<>();
+    @Bean
+    public DefaultClassMapper rabbitClassMapper() {
+        DefaultClassMapper classMapper =
+            new DefaultClassMapper();
+
+        Map<String, Class<?>> typeMappings =
+            new HashMap<>();
 
         typeMappings.put(
             "com.hlrms.requestservice.event.RequestCreatedEvent",
@@ -63,7 +101,8 @@ public class RabbitMqConfig {
     }
 
     @Bean
-    public JacksonJsonMessageConverter rabbitMessageConverter(
+    public JacksonJsonMessageConverter
+    rabbitMessageConverter(
         DefaultClassMapper rabbitClassMapper
     ) {
         JacksonJsonMessageConverter converter =

@@ -1,12 +1,9 @@
 package com.hlrms.requestworker.service;
 
-import com.hlrms.requestworker.entity.RequestEntity;
-import com.hlrms.requestworker.entity.RequestStatus;
-import com.hlrms.requestworker.repository.RequestRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -15,43 +12,36 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class RequestProcessingService {
 
-    private final RequestRepository requestRepository;
+    private final RequestStatusTransactionService
+        statusTransactionService;
 
-    @Transactional
+    @Value("${hlrms.worker.force-failure:false}")
+    private boolean forceFailure;
+
     public void processRequest(UUID requestId) {
-        RequestEntity request =
-            requestRepository
-                .findById(requestId)
-                .orElseThrow(
-                    () -> new IllegalArgumentException(
-                        "Request not found: " + requestId
-                    )
-                );
+        boolean shouldProcess =
+            statusTransactionService
+                .markAsProcessing(requestId);
 
-        if (request.getStatus() == RequestStatus.COMPLETED) {
-            log.info(
-                "Request is already completed. requestId={}",
-                requestId
-            );
-
+        if (!shouldProcess) {
             return;
         }
-
-        request.markAsProcessing();
-        requestRepository.saveAndFlush(request);
 
         log.info(
             "Request processing started. requestId={}",
             requestId
         );
 
-        simulateProcessing();
+        simulateProcessing(requestId);
 
         String processingResult =
-            "Request processed successfully by request-worker";
+            "Request processed successfully " +
+            "by request-worker";
 
-        request.markAsCompleted(processingResult);
-        requestRepository.save(request);
+        statusTransactionService.markAsCompleted(
+            requestId,
+            processingResult
+        );
 
         log.info(
             "Request processing completed. requestId={}",
@@ -59,7 +49,15 @@ public class RequestProcessingService {
         );
     }
 
-    private void simulateProcessing() {
+    private void simulateProcessing(UUID requestId) {
+        if (forceFailure) {
+            throw new IllegalStateException(
+                "Forced worker failure for testing. " +
+                "requestId=" +
+                requestId
+            );
+        }
+
         try {
             Thread.sleep(2_000);
         } catch (InterruptedException exception) {
