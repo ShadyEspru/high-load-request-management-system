@@ -56,3 +56,7 @@ management:
 logging:
   level:
     com.hlrms.requestworker: INFO
+
+hlrms:
+  worker:
+    force-failure: ${WORKER_FORCE_FAILURE:false}
