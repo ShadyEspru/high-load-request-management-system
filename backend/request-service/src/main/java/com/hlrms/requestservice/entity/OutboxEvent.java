@@ -8,6 +8,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -72,6 +76,7 @@ public class OutboxEvent {
     )
     private String eventType;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(
         name = "payload",
         nullable = false,

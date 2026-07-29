@@ -4,8 +4,8 @@ spring:
 
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/hlrms_requests}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    username: ${DB_USERNAME:hlrms}
+    password: ${DB_PASSWORD:hlrms_password}
 
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
@@ -27,12 +27,12 @@ spring:
         max-attempts: 3
 
   jpa:
-  hibernate:
-    ddl-auto: validate
-  open-in-view: false
-  properties:
     hibernate:
-      format_sql: true
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
 
   flyway:
     enabled: true
@@ -54,3 +54,11 @@ management:
   endpoint:
     health:
       show-details: always
+
+hlrms:
+  outbox:
+    publisher-enabled: ${OUTBOX_PUBLISHER_ENABLED:true}
+    initial-delay: ${OUTBOX_INITIAL_DELAY:2000}
+    fixed-delay: ${OUTBOX_FIXED_DELAY:1000}
+    batch-size: ${OUTBOX_BATCH_SIZE:20}
+    max-attempts: ${OUTBOX_MAX_ATTEMPTS:10}

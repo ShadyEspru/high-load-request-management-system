@@ -1,6 +1,5 @@
 package com.hlrms.requestservice.service;
 
-import com.hlrms.requestservice.messaging.RequestEventPublisher;
 import com.hlrms.requestservice.dto.CreateRequestDto;
 import com.hlrms.requestservice.dto.CreateRequestResult;
 import com.hlrms.requestservice.dto.PageResponseDto;
@@ -10,9 +9,7 @@ import com.hlrms.requestservice.entity.RequestStatus;
 import com.hlrms.requestservice.exception.IdempotencyConflictException;
 import com.hlrms.requestservice.exception.RequestNotFoundException;
 import com.hlrms.requestservice.repository.RequestRepository;
-
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -30,8 +27,11 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class RequestServiceImpl implements RequestService {
+
     private final RequestRepository requestRepository;
-    private final RequestEventPublisher requestEventPublisher;
+
+    private final RequestCreationTransactionService
+        requestCreationTransactionService;
 
     @Override
     public CreateRequestResult createRequest(
@@ -63,22 +63,15 @@ public class RequestServiceImpl implements RequestService {
             );
         }
 
-        RequestEntity requestEntity =
-            RequestEntity.builder()
-                .idempotencyKey(normalizedKey)
-                .idempotencyFingerprint(fingerprint)
-                .requestType(normalizedRequestType)
-                .payload(normalizedPayload)
-                .status(RequestStatus.PENDING)
-                .build();
-
         try {
             RequestEntity savedRequest =
-                requestRepository.saveAndFlush(requestEntity);
-
-            requestEventPublisher.publishRequestCreated(
-                savedRequest.getId()
-            );
+                requestCreationTransactionService
+                    .createRequestWithOutboxEvent(
+                        normalizedKey,
+                        fingerprint,
+                        normalizedRequestType,
+                        normalizedPayload
+                    );
 
             return new CreateRequestResult(
                 toResponseDto(savedRequest),
@@ -87,7 +80,6 @@ public class RequestServiceImpl implements RequestService {
         } catch (
             DataIntegrityViolationException exception
         ) {
-
             RequestEntity concurrentRequest =
                 requestRepository
                     .findByIdempotencyKey(normalizedKey)
