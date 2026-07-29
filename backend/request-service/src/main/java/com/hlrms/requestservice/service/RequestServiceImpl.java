@@ -9,7 +9,10 @@ import com.hlrms.requestservice.entity.RequestStatus;
 import com.hlrms.requestservice.exception.IdempotencyConflictException;
 import com.hlrms.requestservice.exception.RequestNotFoundException;
 import com.hlrms.requestservice.repository.RequestRepository;
+import com.hlrms.requestservice.service.RedisDistributedLockService.LockAttempt;
+import com.hlrms.requestservice.service.RedisIdempotencyService.IdempotencyRecord;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,8 +25,10 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RequestServiceImpl implements RequestService {
@@ -33,37 +38,89 @@ public class RequestServiceImpl implements RequestService {
     private final RequestCreationTransactionService
         requestCreationTransactionService;
 
+    private final RedisIdempotencyService
+        redisIdempotencyService;
+
+    private final RedisDistributedLockService
+        redisDistributedLockService;
+
+    private final RequestCacheService
+        requestCacheService;
+
     @Override
     public CreateRequestResult createRequest(
         CreateRequestDto createRequestDto,
         String idempotencyKey
     ) {
-        String normalizedKey = idempotencyKey.trim();
+        String normalizedKey =
+            idempotencyKey.trim();
 
         String normalizedRequestType =
-            createRequestDto.requestType().trim();
+            createRequestDto
+                .requestType()
+                .trim();
 
         String normalizedPayload =
-            createRequestDto.payload().trim();
+            createRequestDto
+                .payload()
+                .trim();
 
-        String fingerprint = generateFingerprint(
-            normalizedRequestType,
-            normalizedPayload
-        );
-
-        var existingRequest =
-            requestRepository.findByIdempotencyKey(
-                normalizedKey
+        String fingerprint =
+            generateFingerprint(
+                normalizedRequestType,
+                normalizedPayload
             );
 
-        if (existingRequest.isPresent()) {
-            return handleExistingRequest(
-                existingRequest.get(),
+        Optional<CreateRequestResult>
+            redisReplay =
+            findReplayFromRedis(
+                normalizedKey,
                 fingerprint
             );
+
+        if (redisReplay.isPresent()) {
+            return redisReplay.get();
+        }
+
+        String lockKey =
+            redisIdempotencyService
+                .buildLockKey(normalizedKey);
+
+        LockAttempt lockAttempt =
+            redisDistributedLockService
+                .tryAcquire(lockKey);
+
+        if (
+            lockAttempt.redisAvailable()
+                && !lockAttempt.acquired()
+        ) {
+            redisDistributedLockService
+                .waitUntilUnlocked(lockKey);
+
+            Optional<CreateRequestResult>
+                concurrentReplay =
+                findExistingRequest(
+                    normalizedKey,
+                    fingerprint
+                );
+
+            if (concurrentReplay.isPresent()) {
+                return concurrentReplay.get();
+            }
         }
 
         try {
+            Optional<CreateRequestResult>
+                existingRequest =
+                findExistingRequest(
+                    normalizedKey,
+                    fingerprint
+                );
+
+            if (existingRequest.isPresent()) {
+                return existingRequest.get();
+            }
+
             RequestEntity savedRequest =
                 requestCreationTransactionService
                     .createRequestWithOutboxEvent(
@@ -73,21 +130,51 @@ public class RequestServiceImpl implements RequestService {
                         normalizedPayload
                     );
 
+            redisIdempotencyService.save(
+                normalizedKey,
+                fingerprint,
+                savedRequest.getId()
+            );
+
+            log.info(
+                "Request created with distributed " +
+                "idempotency protection. " +
+                "requestId={}",
+                savedRequest.getId()
+            );
+
             return new CreateRequestResult(
                 toResponseDto(savedRequest),
                 false
             );
+
         } catch (
             DataIntegrityViolationException exception
         ) {
             RequestEntity concurrentRequest =
                 requestRepository
-                    .findByIdempotencyKey(normalizedKey)
+                    .findByIdempotencyKey(
+                        normalizedKey
+                    )
                     .orElseThrow(() -> exception);
 
-            return handleExistingRequest(
-                concurrentRequest,
-                fingerprint
+            CreateRequestResult replayResult =
+                handleExistingRequest(
+                    concurrentRequest,
+                    fingerprint
+                );
+
+            redisIdempotencyService.save(
+                normalizedKey,
+                fingerprint,
+                concurrentRequest.getId()
+            );
+
+            return replayResult;
+
+        } finally {
+            redisDistributedLockService.release(
+                lockAttempt
             );
         }
     }
@@ -97,6 +184,19 @@ public class RequestServiceImpl implements RequestService {
     public RequestResponseDto getRequestById(
         UUID requestId
     ) {
+        Optional<RequestResponseDto> cachedRequest =
+            requestCacheService.find(requestId);
+
+        if (cachedRequest.isPresent()) {
+            log.debug(
+                "Request returned from Redis cache. " +
+                "requestId={}",
+                requestId
+            );
+
+            return cachedRequest.get();
+        }
+
         RequestEntity requestEntity =
             requestRepository
                 .findById(requestId)
@@ -106,7 +206,12 @@ public class RequestServiceImpl implements RequestService {
                     )
                 );
 
-        return toResponseDto(requestEntity);
+        RequestResponseDto response =
+            toResponseDto(requestEntity);
+
+        requestCacheService.saveIfTerminal(response);
+
+        return response;
     }
 
     @Override
@@ -117,14 +222,15 @@ public class RequestServiceImpl implements RequestService {
         int page,
         int size
     ) {
-        Pageable pageable = PageRequest.of(
-            page,
-            size,
-            Sort.by(
-                Sort.Direction.DESC,
-                "createdAt"
-            )
-        );
+        Pageable pageable =
+            PageRequest.of(
+                page,
+                size,
+                Sort.by(
+                    Sort.Direction.DESC,
+                    "createdAt"
+                )
+            );
 
         Page<RequestEntity> requestPage;
 
@@ -156,25 +262,113 @@ public class RequestServiceImpl implements RequestService {
         );
     }
 
+    private Optional<CreateRequestResult>
+    findReplayFromRedis(
+        String idempotencyKey,
+        String incomingFingerprint
+    ) {
+        Optional<IdempotencyRecord> cachedRecord =
+            redisIdempotencyService.find(
+                idempotencyKey
+            );
+
+        if (cachedRecord.isEmpty()) {
+            return Optional.empty();
+        }
+
+        IdempotencyRecord record =
+            cachedRecord.get();
+
+        validateFingerprint(
+            record.fingerprint(),
+            incomingFingerprint
+        );
+
+        Optional<RequestEntity> request =
+            requestRepository.findById(
+                record.requestId()
+            );
+
+        if (request.isEmpty()) {
+            redisIdempotencyService.delete(
+                idempotencyKey
+            );
+
+            return Optional.empty();
+        }
+
+        return Optional.of(
+            new CreateRequestResult(
+                toResponseDto(request.get()),
+                true
+            )
+        );
+    }
+
+    private Optional<CreateRequestResult>
+    findExistingRequest(
+        String idempotencyKey,
+        String incomingFingerprint
+    ) {
+        Optional<RequestEntity> existingRequest =
+            requestRepository
+                .findByIdempotencyKey(
+                    idempotencyKey
+                );
+
+        if (existingRequest.isEmpty()) {
+            return Optional.empty();
+        }
+
+        RequestEntity request =
+            existingRequest.get();
+
+        CreateRequestResult result =
+            handleExistingRequest(
+                request,
+                incomingFingerprint
+            );
+
+        redisIdempotencyService.save(
+            idempotencyKey,
+            request.getIdempotencyFingerprint(),
+            request.getId()
+        );
+
+        return Optional.of(result);
+    }
+
     private CreateRequestResult handleExistingRequest(
         RequestEntity existingRequest,
         String incomingFingerprint
     ) {
-        if (!existingRequest
-            .getIdempotencyFingerprint()
-            .equals(incomingFingerprint)) {
+        validateFingerprint(
+            existingRequest
+                .getIdempotencyFingerprint(),
+            incomingFingerprint
+        );
 
+        return new CreateRequestResult(
+            toResponseDto(existingRequest),
+            true
+        );
+    }
+
+    private void validateFingerprint(
+        String existingFingerprint,
+        String incomingFingerprint
+    ) {
+        if (
+            !existingFingerprint.equals(
+                incomingFingerprint
+            )
+        ) {
             throw new IdempotencyConflictException(
                 "The Idempotency-Key has already " +
                 "been used with a different " +
                 "request payload"
             );
         }
-
-        return new CreateRequestResult(
-            toResponseDto(existingRequest),
-            true
-        );
     }
 
     private String generateFingerprint(
@@ -186,13 +380,16 @@ public class RequestServiceImpl implements RequestService {
 
         try {
             MessageDigest messageDigest =
-                MessageDigest.getInstance("SHA-256");
+                MessageDigest.getInstance(
+                    "SHA-256"
+                );
 
-            byte[] hash = messageDigest.digest(
-                fingerprintSource.getBytes(
-                    StandardCharsets.UTF_8
-                )
-            );
+            byte[] hash =
+                messageDigest.digest(
+                    fingerprintSource.getBytes(
+                        StandardCharsets.UTF_8
+                    )
+                );
 
             return HexFormat
                 .of()
