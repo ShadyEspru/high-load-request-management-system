@@ -6,28 +6,32 @@ import com.hlrms.requestservice.exception.MessagePublishingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class RequestEventPublisher {
 
-    private static final long CONFIRM_TIMEOUT_SECONDS = 5;
+    private static final long
+        CONFIRM_TIMEOUT_SECONDS = 5;
 
     private final RabbitTemplate rabbitTemplate;
 
-    public void publishRequestCreated(UUID requestId) {
-        RequestCreatedEvent event =
-            RequestCreatedEvent.of(requestId);
-
+    public void publishRequestCreated(
+        RequestCreatedEvent event
+    ) {
         CorrelationData correlationData =
-            new CorrelationData(event.eventId().toString());
+            new CorrelationData(
+                event.eventId().toString()
+            );
 
         try {
             rabbitTemplate.convertAndSend(
@@ -36,10 +40,14 @@ public class RequestEventPublisher {
                 event,
                 message -> {
                     message.getMessageProperties()
-                        .setMessageId(event.eventId().toString());
+                        .setMessageId(
+                            event.eventId().toString()
+                        );
 
                     message.getMessageProperties()
-                        .setCorrelationId(requestId.toString());
+                        .setCorrelationId(
+                            event.requestId().toString()
+                        );
 
                     message.getMessageProperties()
                         .setHeader(
@@ -55,8 +63,7 @@ public class RequestEventPublisher {
 
                     message.getMessageProperties()
                         .setDeliveryMode(
-                            org.springframework.amqp.core
-                                .MessageDeliveryMode.PERSISTENT
+                            MessageDeliveryMode.PERSISTENT
                         );
 
                     return message;
@@ -74,31 +81,38 @@ public class RequestEventPublisher {
 
             if (!confirm.ack()) {
                 throw new MessagePublishingException(
-                    "RabbitMQ rejected the event. Reason: " +
+                    "RabbitMQ rejected the event. " +
+                    "Reason: " +
                     confirm.reason()
                 );
             }
 
-            var returned = correlationData.getReturned();
+            var returned =
+                correlationData.getReturned();
 
             if (returned != null) {
                 throw new MessagePublishingException(
-                    "RabbitMQ could not route the event. " +
-                    "Reply: " + returned.getReplyText()
+                    "RabbitMQ could not route the " +
+                    "event. Reply: " +
+                    returned.getReplyText()
                 );
             }
 
             log.info(
-                "Published RequestCreatedEvent. " +
+                "Published outbox event. " +
                 "eventId={}, requestId={}",
                 event.eventId(),
                 event.requestId()
             );
-        } catch (MessagePublishingException exception) {
+
+        } catch (
+            MessagePublishingException exception
+        ) {
             throw exception;
         } catch (AmqpException exception) {
             throw new MessagePublishingException(
-                "Failed to publish request event to RabbitMQ",
+                "Failed to publish request event " +
+                "to RabbitMQ",
                 exception
             );
         } catch (InterruptedException exception) {
@@ -108,17 +122,18 @@ public class RequestEventPublisher {
                 "Publishing was interrupted",
                 exception
             );
-        } catch (java.util.concurrent.TimeoutException exception) {
+        } catch (TimeoutException exception) {
             throw new MessagePublishingException(
-                "Timed out while waiting for RabbitMQ confirmation",
+                "Timed out while waiting for " +
+                "RabbitMQ confirmation",
                 exception
             );
-        } catch (java.util.concurrent.ExecutionException exception) {
+        } catch (ExecutionException exception) {
             throw new MessagePublishingException(
-                "Failed while waiting for RabbitMQ confirmation",
+                "Failed while waiting for " +
+                "RabbitMQ confirmation",
                 exception
             );
         }
-        
     }
 }
