@@ -1,16 +1,42 @@
 services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: hlrms-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: hlrms_requests
+      POSTGRES_USER: hlrms
+      POSTGRES_PASSWORD: hlrms_password
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U hlrms -d hlrms_requests"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   rabbitmq:
     image: rabbitmq:4-management
     container_name: hlrms-rabbitmq
     restart: unless-stopped
 
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-
     environment:
       RABBITMQ_DEFAULT_USER: hlrms
       RABBITMQ_DEFAULT_PASS: hlrms_password
+
+    ports:
+      - "5672:5672"
+      - "15672:15672"
 
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
@@ -25,15 +51,12 @@ services:
         ]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   redis:
     image: redis:8-alpine
     container_name: hlrms-redis
     restart: unless-stopped
-
-    ports:
-      - "6379:6379"
 
     command:
       - redis-server
@@ -44,6 +67,9 @@ services:
       - "1000"
       - --requirepass
       - hlrms_redis_password
+
+    ports:
+      - "6379:6379"
 
     volumes:
       - redis_data:/data
@@ -56,8 +82,121 @@ services:
         ]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+
+  request-service:
+    build:
+      context: ./backend/request-service
+      dockerfile: Dockerfile
+
+    container_name: hlrms-request-service
+    restart: unless-stopped
+
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/hlrms_requests
+      DB_USERNAME: hlrms
+      DB_PASSWORD: hlrms_password
+
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: hlrms
+      RABBITMQ_PASSWORD: hlrms_password
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: hlrms_redis_password
+      REDIS_DATABASE: 0
+
+      OUTBOX_PUBLISHER_ENABLED: "true"
+
+    ports:
+      - "8080:8080"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+      rabbitmq:
+        condition: service_healthy
+
+      redis:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  request-worker:
+    build:
+      context: ./backend/request-worker
+      dockerfile: Dockerfile
+
+    container_name: hlrms-request-worker
+    restart: unless-stopped
+
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/hlrms_requests
+      DB_USERNAME: hlrms
+      DB_PASSWORD: hlrms_password
+
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: hlrms
+      RABBITMQ_PASSWORD: hlrms_password
+
+      WORKER_FORCE_FAILURE: "false"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+      rabbitmq:
+        condition: service_healthy
+
+      request-service:
+        condition: service_healthy
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+
+    container_name: hlrms-api-gateway
+    restart: unless-stopped
+
+    environment:
+      REQUEST_SERVICE_URL: http://request-service:8080
+      SERVER_PORT: 8088
+      CORS_ALLOWED_ORIGIN: http://localhost:3000
+      GATEWAY_CONNECT_TIMEOUT_MS: 2000
+      GATEWAY_RESPONSE_TIMEOUT: 10s
+
+    ports:
+      - "8088:8088"
+
+    depends_on:
+      request-service:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:8088/actuator/health | grep -q '\"status\":\"UP\"'"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
 
 volumes:
+  postgres_data:
   rabbitmq_data:
   redis_data:

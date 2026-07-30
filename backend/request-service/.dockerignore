@@ -1,0 +1,8 @@
+.git
+.gitignore
+.idea
+.vscode
+*.log
+
+target/*
+!target/request-service-0.0.1-SNAPSHOT.jar
