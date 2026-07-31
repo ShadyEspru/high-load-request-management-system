@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class RequestCreationTransactionService {
@@ -27,6 +29,7 @@ public class RequestCreationTransactionService {
 
     @Transactional
     public RequestEntity createRequestWithOutboxEvent(
+        UUID userId,
         String idempotencyKey,
         String idempotencyFingerprint,
         String requestType,
@@ -34,6 +37,7 @@ public class RequestCreationTransactionService {
     ) {
         RequestEntity requestEntity =
             RequestEntity.builder()
+                .userId(userId)
                 .idempotencyKey(idempotencyKey)
                 .idempotencyFingerprint(
                     idempotencyFingerprint

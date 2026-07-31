@@ -1,7 +1,5 @@
 package com.hlrms.requestservice.exception;
 
-import com.hlrms.requestservice.exception.IdempotencyConflictException;
-import com.hlrms.requestservice.exception.MessagePublishingException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -19,8 +17,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -140,6 +136,20 @@ public class GlobalExceptionHandler {
                 "reason",
                 exception.getMessage()
             )
+        );
+    }
+
+    @ExceptionHandler(
+        TrustedUserHeaderException.class
+    )
+    public ResponseEntity<Map<String, Object>>
+    handleTrustedUserHeaderException(
+        TrustedUserHeaderException exception
+    ) {
+        return buildErrorResponse(
+            HttpStatus.UNAUTHORIZED,
+            exception.getMessage(),
+            null
         );
     }
 

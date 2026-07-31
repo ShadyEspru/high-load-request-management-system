@@ -27,8 +27,12 @@ import java.util.UUID;
     name = "requests",
     uniqueConstraints = {
         @UniqueConstraint(
-            name = "uk_requests_idempotency_key",
-            columnNames = "idempotency_key"
+            name =
+                "uk_requests_user_id_idempotency_key",
+            columnNames = {
+                "user_id",
+                "idempotency_key"
+            }
         )
     }
 )
@@ -42,6 +46,13 @@ public class RequestEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    @Column(
+        name = "user_id",
+        nullable = false,
+        updatable = false
+    )
+    private UUID userId;
 
     @Column(
         name = "request_type",
@@ -104,7 +115,6 @@ public class RequestEntity {
     @Column(
     name = "idempotency_key",
     nullable = false,
-    unique = true,
     length = 100
     )
     private String idempotencyKey;

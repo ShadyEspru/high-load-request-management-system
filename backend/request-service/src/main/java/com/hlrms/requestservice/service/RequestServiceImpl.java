@@ -11,6 +11,7 @@ import com.hlrms.requestservice.exception.RequestNotFoundException;
 import com.hlrms.requestservice.repository.RequestRepository;
 import com.hlrms.requestservice.service.RedisDistributedLockService.LockAttempt;
 import com.hlrms.requestservice.service.RedisIdempotencyService.IdempotencyRecord;
+import com.hlrms.requestservice.security.CurrentUserProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -47,13 +48,25 @@ public class RequestServiceImpl implements RequestService {
     private final RequestCacheService
         requestCacheService;
 
+    private final CurrentUserProvider
+        currentUserProvider;
+
     @Override
     public CreateRequestResult createRequest(
         CreateRequestDto createRequestDto,
         String idempotencyKey
     ) {
+        UUID userId =
+            currentUserProvider.getUserId();
+
         String normalizedKey =
             idempotencyKey.trim();
+
+        String userScopedIdempotencyKey =
+            buildUserScopedIdempotencyKey(
+                userId,
+                normalizedKey
+            );
 
         String normalizedRequestType =
             createRequestDto
@@ -74,7 +87,8 @@ public class RequestServiceImpl implements RequestService {
         Optional<CreateRequestResult>
             redisReplay =
             findReplayFromRedis(
-                normalizedKey,
+                userId,
+                userScopedIdempotencyKey,
                 fingerprint
             );
 
@@ -84,7 +98,9 @@ public class RequestServiceImpl implements RequestService {
 
         String lockKey =
             redisIdempotencyService
-                .buildLockKey(normalizedKey);
+                .buildLockKey(
+                    userScopedIdempotencyKey
+                );
 
         LockAttempt lockAttempt =
             redisDistributedLockService
@@ -100,7 +116,9 @@ public class RequestServiceImpl implements RequestService {
             Optional<CreateRequestResult>
                 concurrentReplay =
                 findExistingRequest(
+                    userId,
                     normalizedKey,
+                    userScopedIdempotencyKey,
                     fingerprint
                 );
 
@@ -113,7 +131,9 @@ public class RequestServiceImpl implements RequestService {
             Optional<CreateRequestResult>
                 existingRequest =
                 findExistingRequest(
+                    userId,
                     normalizedKey,
+                    userScopedIdempotencyKey,
                     fingerprint
                 );
 
@@ -124,6 +144,7 @@ public class RequestServiceImpl implements RequestService {
             RequestEntity savedRequest =
                 requestCreationTransactionService
                     .createRequestWithOutboxEvent(
+                        userId,
                         normalizedKey,
                         fingerprint,
                         normalizedRequestType,
@@ -131,7 +152,7 @@ public class RequestServiceImpl implements RequestService {
                     );
 
             redisIdempotencyService.save(
-                normalizedKey,
+                userScopedIdempotencyKey,
                 fingerprint,
                 savedRequest.getId()
             );
@@ -153,7 +174,8 @@ public class RequestServiceImpl implements RequestService {
         ) {
             RequestEntity concurrentRequest =
                 requestRepository
-                    .findByIdempotencyKey(
+                    .findByUserIdAndIdempotencyKey(
+                        userId,
                         normalizedKey
                     )
                     .orElseThrow(() -> exception);
@@ -165,7 +187,7 @@ public class RequestServiceImpl implements RequestService {
                 );
 
             redisIdempotencyService.save(
-                normalizedKey,
+                userScopedIdempotencyKey,
                 fingerprint,
                 concurrentRequest.getId()
             );
@@ -184,22 +206,15 @@ public class RequestServiceImpl implements RequestService {
     public RequestResponseDto getRequestById(
         UUID requestId
     ) {
-        Optional<RequestResponseDto> cachedRequest =
-            requestCacheService.find(requestId);
-
-        if (cachedRequest.isPresent()) {
-            log.debug(
-                "Request returned from Redis cache. " +
-                "requestId={}",
-                requestId
-            );
-
-            return cachedRequest.get();
-        }
+        UUID userId =
+            currentUserProvider.getUserId();
 
         RequestEntity requestEntity =
             requestRepository
-                .findById(requestId)
+                .findByIdAndUserId(
+                    requestId,
+                    userId
+                )
                 .orElseThrow(
                     () -> new RequestNotFoundException(
                         requestId
@@ -218,10 +233,12 @@ public class RequestServiceImpl implements RequestService {
     @Transactional(readOnly = true)
     public PageResponseDto<RequestResponseDto>
     getAllRequests(
-        RequestStatus status,
+                RequestStatus status,
         int page,
         int size
     ) {
+        UUID userId =
+            currentUserProvider.getUserId();
         Pageable pageable =
             PageRequest.of(
                 page,
@@ -236,13 +253,18 @@ public class RequestServiceImpl implements RequestService {
 
         if (status == null) {
             requestPage =
-                requestRepository.findAll(pageable);
-        } else {
-            requestPage =
-                requestRepository.findAllByStatus(
-                    status,
+                requestRepository.findAllByUserId(
+                    userId,
                     pageable
                 );
+        } else {
+            requestPage =
+                requestRepository
+                    .findAllByUserIdAndStatus(
+                        userId,
+                        status,
+                        pageable
+                    );
         }
 
         return new PageResponseDto<>(
@@ -264,12 +286,13 @@ public class RequestServiceImpl implements RequestService {
 
     private Optional<CreateRequestResult>
     findReplayFromRedis(
-        String idempotencyKey,
+        UUID userId,
+        String userScopedIdempotencyKey,
         String incomingFingerprint
     ) {
         Optional<IdempotencyRecord> cachedRecord =
             redisIdempotencyService.find(
-                idempotencyKey
+                userScopedIdempotencyKey
             );
 
         if (cachedRecord.isEmpty()) {
@@ -285,13 +308,14 @@ public class RequestServiceImpl implements RequestService {
         );
 
         Optional<RequestEntity> request =
-            requestRepository.findById(
-                record.requestId()
+            requestRepository.findByIdAndUserId(
+                record.requestId(),
+                userId
             );
 
         if (request.isEmpty()) {
             redisIdempotencyService.delete(
-                idempotencyKey
+                userScopedIdempotencyKey
             );
 
             return Optional.empty();
@@ -307,12 +331,15 @@ public class RequestServiceImpl implements RequestService {
 
     private Optional<CreateRequestResult>
     findExistingRequest(
+        UUID userId,
         String idempotencyKey,
+        String userScopedIdempotencyKey,
         String incomingFingerprint
     ) {
         Optional<RequestEntity> existingRequest =
             requestRepository
-                .findByIdempotencyKey(
+                .findByUserIdAndIdempotencyKey(
+                    userId,
                     idempotencyKey
                 );
 
@@ -330,7 +357,7 @@ public class RequestServiceImpl implements RequestService {
             );
 
         redisIdempotencyService.save(
-            idempotencyKey,
+            userScopedIdempotencyKey,
             request.getIdempotencyFingerprint(),
             request.getId()
         );
@@ -369,6 +396,13 @@ public class RequestServiceImpl implements RequestService {
                 "request payload"
             );
         }
+    }
+
+    private String buildUserScopedIdempotencyKey(
+        UUID userId,
+        String idempotencyKey
+    ) {
+        return userId + ":" + idempotencyKey;
     }
 
     private String generateFingerprint(

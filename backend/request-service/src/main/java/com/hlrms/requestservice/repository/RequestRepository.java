@@ -12,12 +12,25 @@ import java.util.UUID;
 public interface RequestRepository
     extends JpaRepository<RequestEntity, UUID> {
 
-    Page<RequestEntity> findAllByStatus(
+    Optional<RequestEntity> findByIdAndUserId(
+        UUID requestId,
+        UUID userId
+    );
+
+    Page<RequestEntity> findAllByUserId(
+        UUID userId,
+        Pageable pageable
+    );
+
+    Page<RequestEntity> findAllByUserIdAndStatus(
+        UUID userId,
         RequestStatus status,
         Pageable pageable
     );
 
-    Optional<RequestEntity> findByIdempotencyKey(
+    Optional<RequestEntity>
+    findByUserIdAndIdempotencyKey(
+        UUID userId,
         String idempotencyKey
     );
 }
