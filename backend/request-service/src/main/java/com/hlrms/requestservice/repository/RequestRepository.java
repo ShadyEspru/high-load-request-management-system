@@ -28,6 +28,11 @@ public interface RequestRepository
         Pageable pageable
     );
 
+    Page<RequestEntity> findAllByStatus(
+        RequestStatus status,
+        Pageable pageable
+    );
+
     Optional<RequestEntity>
     findByUserIdAndIdempotencyKey(
         UUID userId,
