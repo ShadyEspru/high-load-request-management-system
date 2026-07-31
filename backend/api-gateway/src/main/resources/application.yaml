@@ -7,6 +7,15 @@ spring:
       server:
         webflux:
           routes:
+            - id: request-service-admin-route
+              uri: ${REQUEST_SERVICE_URL:http://localhost:8080}
+
+              predicates:
+                - Path=/api/v1/admin/requests,/api/v1/admin/requests/**
+
+              filters:
+                - AddResponseHeader=X-Gateway-Service,api-gateway
+                
             - id: auth-service-route
               uri: ${AUTH_SERVICE_URL:http://localhost:8081}
 
