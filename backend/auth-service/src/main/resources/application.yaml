@@ -43,3 +43,12 @@ logging:
   level:
     root: INFO
     com.hlrms.authservice: INFO
+
+jwt:
+  issuer: hlrms-auth-service
+
+  secret: ${JWT_SECRET:ReplaceThisWithAVeryLongRandomSecretKeyAtLeast32Characters}
+
+  access-token-expiration: 15m
+
+  refresh-token-expiration: 30d
