@@ -22,6 +22,7 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.hlrms.authservice.metrics.AuthMetrics;
 
 import java.time.Instant;
 import java.util.Locale;
@@ -37,6 +38,7 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final TokenHashService tokenHashService;
     private final JwtProperties jwtProperties;
+    private final AuthMetrics authMetrics;
 
     public AuthenticationService(
             UserRepository userRepository,
@@ -45,7 +47,8 @@ public class AuthenticationService {
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             TokenHashService tokenHashService,
-            JwtProperties jwtProperties
+            JwtProperties jwtProperties,
+            AuthMetrics authMetrics
     ) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
@@ -54,6 +57,7 @@ public class AuthenticationService {
         this.jwtService = jwtService;
         this.tokenHashService = tokenHashService;
         this.jwtProperties = jwtProperties;
+        this.authMetrics = authMetrics;
     }
 
     public RegisterResponse register(RegisterRequest request) {
@@ -80,6 +84,8 @@ public class AuthenticationService {
 
         UserEntity savedUser = userRepository.save(user);
 
+        authMetrics.registerSuccess();
+
         return new RegisterResponse(
                 savedUser.getId(),
                 savedUser.getEmail(),
@@ -93,17 +99,27 @@ public class AuthenticationService {
 
         String normalizedEmail = normalizeEmail(request.email());
 
-        UserEntity user = userRepository.findByEmail(normalizedEmail)
-                .orElseThrow(InvalidCredentialsException::new);
+        UserEntity user;
+
+        try {
+            user = userRepository.findByEmail(normalizedEmail)
+                    .orElseThrow(InvalidCredentialsException::new);
+        } catch (InvalidCredentialsException e) {
+            authMetrics.loginFailed();
+            throw e;
+        }
 
         if (!passwordEncoder.matches(
                 request.password(),
                 user.getPasswordHash()
         )) {
+            authMetrics.loginFailed();
             throw new InvalidCredentialsException();
         }
 
         validateUserAccount(user);
+
+        authMetrics.loginSuccess();
 
         return createAuthenticationResponse(user);
     }
@@ -128,6 +144,8 @@ public class AuthenticationService {
         currentRefreshToken.revoke();
 
         refreshTokenRepository.save(currentRefreshToken);
+
+        authMetrics.refreshSuccess();
 
         return createAuthenticationResponse(user);
     }
