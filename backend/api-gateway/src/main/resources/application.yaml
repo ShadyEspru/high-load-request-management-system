@@ -100,6 +100,7 @@ management:
           - health
           - info
           - metrics
+          - prometheus
           - gateway
 
   endpoint:
@@ -107,6 +108,24 @@ management:
       show-details: always
     gateway:
       access: read-only
+
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+    distribution:
+      percentiles-histogram:
+        "{http.server.requests}": true
+
+      slo:
+        "{http.server.requests}":
+          - 50ms
+          - 100ms
+          - 250ms
+          - 500ms
+          - 1s
+          - 2s
+          - 5s
 
   health:
     redis:

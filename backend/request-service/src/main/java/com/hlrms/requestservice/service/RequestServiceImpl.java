@@ -8,6 +8,7 @@ import com.hlrms.requestservice.entity.RequestEntity;
 import com.hlrms.requestservice.entity.RequestStatus;
 import com.hlrms.requestservice.exception.IdempotencyConflictException;
 import com.hlrms.requestservice.exception.RequestNotFoundException;
+import com.hlrms.requestservice.metrics.RequestMetrics;
 import com.hlrms.requestservice.repository.RequestRepository;
 import com.hlrms.requestservice.service.RedisDistributedLockService.LockAttempt;
 import com.hlrms.requestservice.service.RedisIdempotencyService.IdempotencyRecord;
@@ -51,6 +52,8 @@ public class RequestServiceImpl implements RequestService {
     private final CurrentUserProvider
         currentUserProvider;
 
+    private final RequestMetrics requestMetrics;
+
     @Override
     public CreateRequestResult createRequest(
         CreateRequestDto createRequestDto,
@@ -93,6 +96,7 @@ public class RequestServiceImpl implements RequestService {
             );
 
         if (redisReplay.isPresent()) {
+            requestMetrics.replayed();
             return redisReplay.get();
         }
 
@@ -123,6 +127,7 @@ public class RequestServiceImpl implements RequestService {
                 );
 
             if (concurrentReplay.isPresent()) {
+                requestMetrics.replayed();
                 return concurrentReplay.get();
             }
         }
@@ -138,6 +143,7 @@ public class RequestServiceImpl implements RequestService {
                 );
 
             if (existingRequest.isPresent()) {
+                requestMetrics.replayed();
                 return existingRequest.get();
             }
 
@@ -150,6 +156,8 @@ public class RequestServiceImpl implements RequestService {
                         normalizedRequestType,
                         normalizedPayload
                     );
+
+            requestMetrics.requestCreated();
 
             redisIdempotencyService.save(
                 userScopedIdempotencyKey,
