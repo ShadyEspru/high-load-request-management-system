@@ -100,6 +100,23 @@ services:
       timeout: 5s
       retries: 10
 
+  redis-exporter:
+    image: oliver006/redis_exporter
+    container_name: hlrms-redis-exporter
+
+    environment:
+      REDIS_ADDR: redis://redis:6379
+      REDIS_PASSWORD: hlrms_redis_password
+
+    ports:
+      - "9121:9121"
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+    restart: unless-stopped
+
   request-service:
     build:
       context: ./backend/request-service
