@@ -25,6 +25,22 @@ services:
       timeout: 5s
       retries: 10
 
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter
+    container_name: hlrms-postgres-exporter
+
+    environment:
+      DATA_SOURCE_NAME: "postgresql://hlrms:hlrms_password@postgres:5432/hlrms_auth?sslmode=disable"
+
+    ports:
+      - "9187:9187"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    restart: unless-stopped
+
   rabbitmq:
     image: rabbitmq:4-management
     container_name: hlrms-rabbitmq
