@@ -1,6 +1,8 @@
 spring:
   application:
     name: auth-service
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
 
   datasource:
     url: ${AUTH_DB_URL:jdbc:postgresql://localhost:5432/hlrms_auth}
@@ -39,6 +41,14 @@ management:
   endpoint:
     health:
       show-details: always
+      probes:
+        enabled: true
+
+  health:
+  livenessstate:
+    enabled: true
+  readinessstate:
+    enabled: true
 
   metrics:
     tags:
