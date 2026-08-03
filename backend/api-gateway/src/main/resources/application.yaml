@@ -2,6 +2,18 @@ spring:
   application:
     name: api-gateway
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:hlrms_redis_password}
+      database: ${REDIS_DATABASE:1}
+      connect-timeout: 2s
+      timeout: 2s
+  
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
   cloud:
     gateway:
       server:
@@ -32,6 +44,12 @@ spring:
                 - Path=/api/v1/requests,/api/v1/requests/**
 
               filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@authenticatedUserKeyResolver}"
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
                 - AddResponseHeader=X-Gateway-Service,api-gateway
 
             - id: request-service-ping-route
@@ -89,7 +107,6 @@ spring:
 
 server:
   port: ${SERVER_PORT:8088}
-
   shutdown: graceful
 
 management:
@@ -106,8 +123,18 @@ management:
   endpoint:
     health:
       show-details: always
+      probes:
+        enabled: true
     gateway:
       access: read-only
+
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+    redis:
+      enabled: false
 
   metrics:
     tags:
@@ -126,10 +153,6 @@ management:
           - 1s
           - 2s
           - 5s
-
-  health:
-    redis:
-      enabled: false
 
 logging:
   pattern:
