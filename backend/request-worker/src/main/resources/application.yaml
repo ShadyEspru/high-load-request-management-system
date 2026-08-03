@@ -2,9 +2,6 @@ spring:
   application:
     name: request-worker
 
-  main:
-    web-application-type: none
-
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/hlrms_requests}
     username: ${DB_USERNAME:hlrms}
@@ -41,6 +38,9 @@ spring:
           max-interval: 5s
           max-attempts: 3
 
+server:
+  port: ${SERVER_PORT:8082}
+
 management:
   endpoints:
     web:
@@ -48,10 +48,16 @@ management:
         include:
           - health
           - info
+          - metrics
+          - prometheus
 
   endpoint:
     health:
       show-details: always
+
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
 logging:
   level:

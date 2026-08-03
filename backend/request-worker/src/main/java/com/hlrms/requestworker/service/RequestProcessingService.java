@@ -4,6 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import com.hlrms.requestworker.metrics.WorkerMetrics;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 
 import java.util.UUID;
 
@@ -11,6 +14,10 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class RequestProcessingService {
+
+    private final WorkerMetrics workerMetrics;
+
+    private final MeterRegistry meterRegistry;
 
     private final RequestStatusTransactionService
         statusTransactionService;
@@ -26,6 +33,9 @@ public class RequestProcessingService {
         if (!shouldProcess) {
             return;
         }
+        
+        Timer.Sample sample =
+            workerMetrics.startProcessingTimer(meterRegistry);
 
         log.info(
             "Request processing started. requestId={}",
@@ -42,6 +52,10 @@ public class RequestProcessingService {
             requestId,
             processingResult
         );
+
+        workerMetrics.requestCompleted();
+
+        workerMetrics.recordProcessingTime(sample);
 
         log.info(
             "Request processing completed. requestId={}",

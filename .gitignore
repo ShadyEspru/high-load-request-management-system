@@ -9,3 +9,6 @@ build/
 .DS_Store
 node_modules/
 reports/load-tests/*.html
+
+# Local Grafana dashboard backups
+monitoring/grafana/backups/
