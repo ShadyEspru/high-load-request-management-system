@@ -27,7 +27,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private static final List<String> PUBLIC_PATHS = List.of(
             "/api/v1/auth/",
-            "/actuator"
+            "/actuator",
+            "/fallback/"
     );
 
     private static final String USER_ID_HEADER = "X-User-Id";
@@ -107,14 +108,12 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                         .getRequest()
                         .mutate()
 
-                        // إزالة أي Headers قد يرسلها العميل
                         .headers(headers -> {
                             headers.remove(USER_ID_HEADER);
                             headers.remove(USER_EMAIL_HEADER);
                             headers.remove(USER_ROLES_HEADER);
                         })
 
-                        // إضافة القيم الصحيحة من الـ JWT
                         .header(USER_ID_HEADER, userId)
                         .header(USER_EMAIL_HEADER, email)
                         .header(USER_ROLES_HEADER, roles)
