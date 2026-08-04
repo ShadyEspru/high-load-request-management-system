@@ -210,12 +210,18 @@ services:
       CORS_ALLOWED_ORIGIN: http://localhost:3000
       GATEWAY_CONNECT_TIMEOUT_MS: 2000
       GATEWAY_RESPONSE_TIMEOUT: 10s
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: hlrms_redis_password
+      REDIS_DATABASE: 1
 
     ports:
       - "8088:8088"
 
     depends_on:
       request-service:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
     healthcheck:

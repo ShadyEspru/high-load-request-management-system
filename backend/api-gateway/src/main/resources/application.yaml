@@ -2,6 +2,18 @@ spring:
   application:
     name: api-gateway
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:hlrms_redis_password}
+      database: ${REDIS_DATABASE:1}
+      connect-timeout: 2s
+      timeout: 2s
+  
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
   cloud:
     gateway:
       server:
@@ -14,6 +26,13 @@ spring:
                 - Path=/api/v1/admin/requests,/api/v1/admin/requests/**
 
               filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@authenticatedUserKeyResolver}"
+                    redis-rate-limiter.replenishRate: 5
+                    redis-rate-limiter.burstCapacity: 10
+                    redis-rate-limiter.requestedTokens: 1
+
                 - AddResponseHeader=X-Gateway-Service,api-gateway
                 
             - id: auth-service-route
@@ -23,6 +42,11 @@ spring:
                 - Path=/api/v1/auth,/api/v1/auth/**
 
               filters:
+                - name: CircuitBreaker
+                  args:
+                    name: authServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/auth-service
+
                 - AddResponseHeader=X-Gateway-Service,api-gateway
 
             - id: request-service-route
@@ -32,6 +56,82 @@ spring:
                 - Path=/api/v1/requests,/api/v1/requests/**
 
               filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@authenticatedUserKeyResolver}"
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+
+                - name: CircuitBreaker
+                  args:
+                    name: requestServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/request-service
+
+                - name: Retry
+                  args:
+                    retries: 2
+                    statuses:
+                      - BAD_GATEWAY
+                      - SERVICE_UNAVAILABLE
+                      - GATEWAY_TIMEOUT
+                    methods:
+                      - GET
+                    backoff:
+                      firstBackoff: 100ms
+                      maxBackoff: 500ms
+                      factor: 2
+                      basedOnPreviousValue: false
+                    jitter:
+                      randomFactor: 0.25
+                    timeout: 1500ms
+
+                - AddResponseHeader=X-Gateway-Service,api-gateway
+
+            - id: request-service-bulkhead-test-route
+              uri: ${REQUEST_SERVICE_URL:http://localhost:8080}
+
+              predicates:
+                - Path=/api/v1/resilience-test/bulkhead
+
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: requestServiceTestCircuitBreaker
+                    fallbackUri: forward:/fallback/request-service
+
+                - AddResponseHeader=X-Gateway-Service,api-gateway
+
+            - id: request-service-resilience-test-route
+              uri: ${REQUEST_SERVICE_URL:http://localhost:8080}
+
+              predicates:
+                - Path=/api/v1/resilience-test/**
+
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: requestServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/request-service
+
+                - name: Retry
+                  args:
+                    retries: 2
+                    statuses:
+                      - BAD_GATEWAY
+                      - SERVICE_UNAVAILABLE
+                      - GATEWAY_TIMEOUT
+                    methods:
+                      - GET
+                    backoff:
+                      firstBackoff: 100ms
+                      maxBackoff: 500ms
+                      factor: 2
+                      basedOnPreviousValue: false
+                    jitter:
+                      randomFactor: 0.25
+                    timeout: 1500ms
+
                 - AddResponseHeader=X-Gateway-Service,api-gateway
 
             - id: request-service-ping-route
@@ -80,6 +180,15 @@ spring:
             response-timeout: ${GATEWAY_RESPONSE_TIMEOUT:10s}
 
             compression: true
+
+    circuitbreaker:
+      bulkhead:
+        resilience4j:
+          enabled: true
+
+      resilience4j:
+        enableSemaphoreDefaultBulkhead: true
+
     discovery:
       client:
         health-indicator:
@@ -89,7 +198,6 @@ spring:
 
 server:
   port: ${SERVER_PORT:8088}
-
   shutdown: graceful
 
 management:
@@ -106,8 +214,18 @@ management:
   endpoint:
     health:
       show-details: always
+      probes:
+        enabled: true
     gateway:
       access: read-only
+
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+    redis:
+      enabled: false
 
   metrics:
     tags:
@@ -127,10 +245,6 @@ management:
           - 2s
           - 5s
 
-  health:
-    redis:
-      enabled: false
-
 logging:
   pattern:
     console:
@@ -145,3 +259,68 @@ logging:
 jwt:
   issuer: hlrms-auth-service
   secret: ${JWT_SECRET:ReplaceThisWithAVeryLongRandomSecretKeyAtLeast32Characters}
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        register-health-indicator: true
+        sliding-window-type: count_based
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        permitted-number-of-calls-in-half-open-state: 3
+        wait-duration-in-open-state: 10s
+        automatic-transition-from-open-to-half-open-enabled: true
+
+    instances:
+      requestServiceCircuitBreaker:
+        base-config: default
+
+      authServiceCircuitBreaker:
+        base-config: default
+
+      requestServiceTestCircuitBreaker:
+        base-config: default
+        sliding-window-size: 100
+        minimum-number-of-calls: 100
+
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 4s
+        cancel-running-future: true
+
+    instances:
+      requestServiceCircuitBreaker:
+        base-config: default
+
+      authServiceCircuitBreaker:
+        base-config: default
+
+      requestServiceTestCircuitBreaker:
+        base-config: default
+
+  bulkhead:
+    configs:
+      request-service-default:
+        max-concurrent-calls: 50
+        max-wait-duration: 0
+
+      auth-service-default:
+        max-concurrent-calls: 20
+        max-wait-duration: 0
+
+      test-small:
+        max-concurrent-calls: 5
+        max-wait-duration: 0
+
+    instances:
+      requestServiceCircuitBreaker:
+        base-config: request-service-default
+
+      authServiceCircuitBreaker:
+        base-config: auth-service-default
+
+      requestServiceTestCircuitBreaker:
+        base-config: test-small
