@@ -29,7 +29,7 @@
         "x": 0,
         "y": 0
       },
-      "id": 46,
+      "id": 54,
       "title": "System Health",
       "type": "row"
     },
@@ -667,6 +667,72 @@
       "fieldConfig": {
         "defaults": {
           "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      },
+      "id": 47,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.1.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "hlrms-prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(\r\n  http_server_requests_seconds_count{\r\n    application=\"api-gateway\",\r\n    status=\"429\"\r\n  }\r\n) or vector(0)",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Gateway 429 Total",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "hlrms-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
             "mode": "palette-classic"
           },
           "custom": {
@@ -765,14 +831,117 @@
       "type": "timeseries"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "hlrms-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "reqps"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 11,
+        "x": 0,
+        "y": 22
+      },
+      "id": 46,
+      "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": false
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "enableFacetedFilter": false,
+          "overflow": "ellipsis",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.1.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "hlrms-prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(\r\n  rate(\r\n    http_server_requests_seconds_count{\r\n      application=\"api-gateway\",\r\n      status=\"429\"\r\n    }[$__rate_interval]\r\n  )\r\n) or vector(0)",
+          "legendFormat": "{{HTTP 429}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Gateway Rate-Limited Requests/sec",
+      "type": "timeseries"
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 22
+        "y": 30
       },
-      "id": 47,
+      "id": 55,
       "title": "JVM & Process Metrics",
       "type": "row"
     },
@@ -805,7 +974,7 @@
         "h": 9,
         "w": 8,
         "x": 0,
-        "y": 23
+        "y": 31
       },
       "id": 42,
       "options": {
@@ -906,7 +1075,7 @@
         "h": 9,
         "w": 8,
         "x": 8,
-        "y": 23
+        "y": 31
       },
       "id": 11,
       "options": {
@@ -978,7 +1147,7 @@
         "h": 9,
         "w": 8,
         "x": 16,
-        "y": 23
+        "y": 31
       },
       "id": 43,
       "options": {
@@ -1052,7 +1221,7 @@
         "h": 9,
         "w": 8,
         "x": 0,
-        "y": 32
+        "y": 40
       },
       "id": 44,
       "options": {
@@ -1162,7 +1331,7 @@
         "h": 9,
         "w": 8,
         "x": 8,
-        "y": 32
+        "y": 40
       },
       "id": 45,
       "options": {
@@ -1275,7 +1444,7 @@
         "h": 9,
         "w": 8,
         "x": 16,
-        "y": 32
+        "y": 40
       },
       "id": 10,
       "options": {
@@ -1323,9 +1492,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 41
+        "y": 49
       },
-      "id": 48,
+      "id": 56,
       "title": "Worker Processing",
       "type": "row"
     },
@@ -1358,7 +1527,7 @@
         "h": 9,
         "w": 8,
         "x": 0,
-        "y": 42
+        "y": 50
       },
       "id": 15,
       "options": {
@@ -1424,7 +1593,7 @@
         "h": 9,
         "w": 8,
         "x": 8,
-        "y": 42
+        "y": 50
       },
       "id": 16,
       "options": {
@@ -1525,7 +1694,7 @@
         "h": 9,
         "w": 8,
         "x": 16,
-        "y": 42
+        "y": 50
       },
       "id": 18,
       "options": {
@@ -1628,7 +1797,7 @@
         "h": 9,
         "w": 8,
         "x": 0,
-        "y": 51
+        "y": 59
       },
       "id": 19,
       "options": {
@@ -1731,7 +1900,7 @@
         "h": 9,
         "w": 8,
         "x": 8,
-        "y": 51
+        "y": 59
       },
       "id": 17,
       "options": {
@@ -1776,9 +1945,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 60
+        "y": 68
       },
-      "id": 49,
+      "id": 57,
       "title": "Authentication",
       "type": "row"
     },
@@ -1811,7 +1980,7 @@
         "h": 9,
         "w": 8,
         "x": 0,
-        "y": 61
+        "y": 69
       },
       "id": 20,
       "options": {
@@ -1877,7 +2046,7 @@
         "h": 9,
         "w": 8,
         "x": 8,
-        "y": 61
+        "y": 69
       },
       "id": 21,
       "options": {
@@ -1943,7 +2112,7 @@
         "h": 9,
         "w": 8,
         "x": 16,
-        "y": 61
+        "y": 69
       },
       "id": 22,
       "options": {
@@ -2009,7 +2178,7 @@
         "h": 9,
         "w": 8,
         "x": 0,
-        "y": 70
+        "y": 78
       },
       "id": 23,
       "options": {
@@ -2052,9 +2221,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 79
+        "y": 87
       },
-      "id": 50,
+      "id": 58,
       "title": "RabbitMQ Metrics",
       "type": "row"
     },
@@ -2088,7 +2257,7 @@
         "h": 9,
         "w": 8,
         "x": 0,
-        "y": 80
+        "y": 88
       },
       "id": 24,
       "options": {
@@ -2154,7 +2323,7 @@
         "h": 9,
         "w": 8,
         "x": 8,
-        "y": 80
+        "y": 88
       },
       "id": 25,
       "options": {
@@ -2220,7 +2389,7 @@
         "h": 9,
         "w": 8,
         "x": 16,
-        "y": 80
+        "y": 88
       },
       "id": 26,
       "options": {
@@ -2286,7 +2455,7 @@
         "h": 9,
         "w": 8,
         "x": 0,
-        "y": 89
+        "y": 97
       },
       "id": 27,
       "options": {
@@ -2352,7 +2521,7 @@
         "h": 9,
         "w": 8,
         "x": 8,
-        "y": 89
+        "y": 97
       },
       "id": 28,
       "options": {
@@ -2453,7 +2622,7 @@
         "h": 9,
         "w": 8,
         "x": 16,
-        "y": 89
+        "y": 97
       },
       "id": 29,
       "options": {
@@ -2529,7 +2698,7 @@
         "h": 9,
         "w": 8,
         "x": 0,
-        "y": 98
+        "y": 106
       },
       "id": 30,
       "options": {
@@ -2630,7 +2799,7 @@
         "h": 9,
         "w": 8,
         "x": 8,
-        "y": 98
+        "y": 106
       },
       "id": 31,
       "options": {
@@ -2675,9 +2844,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 107
+        "y": 115
       },
-      "id": 51,
+      "id": 59,
       "title": "PostgreSQL Metrics",
       "type": "row"
     },
@@ -2711,7 +2880,7 @@
         "h": 9,
         "w": 8,
         "x": 0,
-        "y": 108
+        "y": 116
       },
       "id": 32,
       "options": {
@@ -2812,7 +2981,7 @@
         "h": 9,
         "w": 8,
         "x": 8,
-        "y": 108
+        "y": 116
       },
       "id": 33,
       "options": {
@@ -2881,7 +3050,7 @@
         "h": 9,
         "w": 8,
         "x": 16,
-        "y": 108
+        "y": 116
       },
       "id": 34,
       "options": {
@@ -2982,7 +3151,7 @@
         "h": 9,
         "w": 8,
         "x": 0,
-        "y": 117
+        "y": 125
       },
       "id": 35,
       "options": {
@@ -3059,7 +3228,7 @@
         "h": 9,
         "w": 8,
         "x": 8,
-        "y": 117
+        "y": 125
       },
       "id": 36,
       "options": {
@@ -3171,7 +3340,7 @@
         "h": 9,
         "w": 8,
         "x": 16,
-        "y": 117
+        "y": 125
       },
       "id": 12,
       "options": {
@@ -3241,9 +3410,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 126
+        "y": 134
       },
-      "id": 52,
+      "id": 60,
       "title": "Redis Metrics",
       "type": "row"
     },
@@ -3277,7 +3446,7 @@
         "h": 9,
         "w": 8,
         "x": 0,
-        "y": 127
+        "y": 135
       },
       "id": 37,
       "options": {
@@ -3343,7 +3512,7 @@
         "h": 9,
         "w": 8,
         "x": 8,
-        "y": 127
+        "y": 135
       },
       "id": 38,
       "options": {
@@ -3410,7 +3579,7 @@
         "h": 9,
         "w": 8,
         "x": 16,
-        "y": 127
+        "y": 135
       },
       "id": 39,
       "options": {
@@ -3522,7 +3691,7 @@
         "h": 9,
         "w": 8,
         "x": 0,
-        "y": 136
+        "y": 144
       },
       "id": 40,
       "options": {
@@ -3625,7 +3794,7 @@
         "h": 9,
         "w": 8,
         "x": 8,
-        "y": 136
+        "y": 144
       },
       "id": 41,
       "options": {
@@ -3663,6 +3832,525 @@
       ],
       "title": "Redis Commands/sec",
       "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 153
+      },
+      "id": 61,
+      "title": "Resilience",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "hlrms-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 0,
+        "y": 154
+      },
+      "id": 48,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.1.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "hlrms-prometheus"
+          },
+          "editorMode": "code",
+          "expr": "resilience4j_circuitbreaker_state{\r\nname=\"requestServiceCircuitBreaker\",\r\nstate=\"closed\"\r\n}",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Request Service Circuit Breaker",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "hlrms-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 8,
+        "y": 154
+      },
+      "id": 49,
+      "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": false
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "enableFacetedFilter": false,
+          "overflow": "ellipsis",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.1.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "hlrms-prometheus"
+          },
+          "editorMode": "code",
+          "expr": "resilience4j_circuitbreaker_failure_rate{\r\nname=\"requestServiceCircuitBreaker\"\r\n}",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Circuit Breaker Failure Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "hlrms-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "reqps"
+        }
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 16,
+        "y": 154
+      },
+      "id": 50,
+      "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": false
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "enableFacetedFilter": false,
+          "overflow": "ellipsis",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.1.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "hlrms-prometheus"
+          },
+          "editorMode": "code",
+          "expr": "rate(\r\nresilience4j_circuitbreaker_not_permitted_calls_total{\r\nname=\"requestServiceCircuitBreaker\"\r\n}[1m]\r\n)",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Circuit Breaker Rejected Calls",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "hlrms-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 0,
+        "y": 163
+      },
+      "id": 51,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.1.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "hlrms-prometheus"
+          },
+          "editorMode": "code",
+          "expr": "resilience4j_bulkhead_available_concurrent_calls{\r\nname=\"requestServiceTestCircuitBreaker\"\r\n}",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Bulkhead Available Permits",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "hlrms-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 8,
+        "y": 163
+      },
+      "id": 52,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.1.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "hlrms-prometheus"
+          },
+          "editorMode": "code",
+          "expr": "resilience4j_bulkhead_max_allowed_concurrent_calls{\r\nname=\"requestServiceTestCircuitBreaker\"\r\n}",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Bulkhead Capacity",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "hlrms-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "reqps"
+        }
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 16,
+        "y": 163
+      },
+      "id": 53,
+      "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": false
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "enableFacetedFilter": false,
+          "overflow": "ellipsis",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.1.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "hlrms-prometheus"
+          },
+          "editorMode": "code",
+          "expr": "rate(\r\nresilience4j_timelimiter_calls_total{\r\nname=\"requestServiceTestCircuitBreaker\",\r\nkind=\"timeout\"\r\n}[1m]\r\n)",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "TimeLimiter Timeouts",
+      "type": "timeseries"
     }
   ],
   "preload": false,
@@ -3695,5 +4383,5 @@
   "timezone": "browser",
   "title": "HLRMS — System Overview",
   "uid": "hlrms-system-overview",
-  "version": 55
+  "version": 65
 }
