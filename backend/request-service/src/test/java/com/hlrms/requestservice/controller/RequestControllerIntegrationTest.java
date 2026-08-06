@@ -288,7 +288,7 @@ class RequestControllerIntegrationTest {
                     """
                     {
                       "requestType": "",
-                      "payload": ""
+                      "payload": "valid payload"
                     }
                     """
                 )
