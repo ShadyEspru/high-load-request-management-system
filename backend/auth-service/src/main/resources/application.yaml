@@ -45,10 +45,10 @@ management:
         enabled: true
 
   health:
-  livenessstate:
-    enabled: true
-  readinessstate:
-    enabled: true
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
 
   metrics:
     tags:
