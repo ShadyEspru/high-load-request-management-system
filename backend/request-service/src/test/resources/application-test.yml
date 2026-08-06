@@ -4,6 +4,13 @@ spring:
     username: hlrms
     password: hlrms_password
 
+    hikari:
+      maximum-pool-size: 2
+      minimum-idle: 0
+      connection-timeout: 10000
+      idle-timeout: 10000
+      max-lifetime: 30000
+
   data:
     redis:
       host: localhost
