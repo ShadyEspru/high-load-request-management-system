@@ -1,0 +1,34 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/hlrms_requests
+    username: hlrms
+    password: hlrms_password
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: hlrms
+    password: hlrms_password
+
+    listener:
+      simple:
+        auto-startup: true
+        concurrency: 1
+        max-concurrency: 1
+        prefetch: 1
+
+server:
+  port: 0
+
+worker:
+  force-failure: false
+
+management:
+  health:
+    rabbit:
+      enabled: true
