@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">HLRMS Cash</string>
+
+    <string name="good_morning">صباح الخير</string>
+    <string name="good_evening">مساء الخير</string>
+
+    <string name="available_balance">الرصيد</string>
+
+    <string name="send">إرسال</string>
+    <string name="receive">استقبال</string>
+
+    <string name="services">الخدمات</string>
+
+    <string name="exchange_rates">تصريف العملات</string>
+    <string name="exchange_rates_subtitle">أسعار الصرف والعملات</string>
+
+    <string name="transfer_history">سجل الحوالات</string>
+    <string name="all_transactions">جميع العمليات</string>
+
+    <string name="recent_transactions">آخر العمليات</string>
+
+    <string name="newest_first">الأحدث أولًا</string>
+    <string name="oldest_first">الأقدم أولًا</string>
+    <string name="largest_first">أكبر التحويلات</string>
+    <string name="smallest_first">أصغر التحويلات</string>
+
+    <string name="settings">الإعدادات</string>
+
+    <string name="dark_mode">الوضع الداكن</string>
+    <string name="dark_mode_enabled">مفعّل</string>
+    <string name="light_mode_enabled">الوضع الفاتح</string>
+
+    <string name="language">اللغة</string>
+    <string name="arabic">العربية</string>
+    <string name="english">English</string>
+
+    <string name="account">حسابي</string>
+    <string name="account_information">معلومات الحساب</string>
+    <string name="security_privacy">الأمان والخصوصية</string>
+    <string name="help_support">المساعدة والدعم</string>
+    <string name="logout">تسجيل الخروج</string>
+
+    <string name="outgoing_transfer">حوالة صادرة</string>
+    <string name="incoming_transfer">حوالة واردة</string>
+    <string name="currency_exchange">تحويل عملة</string>
+
+    <string name="today">اليوم</string>
+    <string name="yesterday">أمس</string>
+
+
+    <!-- Authentication -->
+    <string name="login_title">تسجيل الدخول</string>
+    <string name="login_subtitle">أدخل بيانات حسابك للمتابعة</string>
+    <string name="email_address">البريد الإلكتروني</string>
+    <string name="password">كلمة المرور</string>
+    <string name="no_account_create">ليس لديك حساب؟ أنشئ حسابًا</string>
+
+    <string name="register_title">إنشاء حساب</string>
+    <string name="register_subtitle">أدخل بياناتك لإنشاء حساب جديد</string>
+    <string name="first_name">الاسم الأول</string>
+    <string name="last_name">اسم العائلة</string>
+    <string name="password_min_8">يجب أن تكون 8 أحرف على الأقل</string>
+    <string name="create_account">إنشاء الحساب</string>
+    <string name="already_have_account">لديك حساب بالفعل؟ سجل الدخول</string>
+
+
+    <!-- QR Scanner -->
+    <string name="qr_camera_permission_required">يجب السماح باستخدام الكاميرا لمسح QR</string>
+    <string name="qr_invalid_transfer">رمز QR غير صالح للحوالات</string>
+    <string name="back">رجوع</string>
+    <string name="send_transfer">إرسال حوالة</string>
+    <string name="search_by_transfer_id">البحث عبر المعرّف</string>
+    <string name="qr_scan_instruction">قم بجعل رمز QR داخل الإطار للمسح</string>
+    <string name="qr_camera_permission_needed">يلزم إذن الكاميرا لمسح رمز QR</string>
+    <string name="allow_camera">السماح باستخدام الكاميرا</string>
+
+
+    <!-- Send Money -->
+    <string name="review_transfer">مراجعة الحوالة</string>
+    <string name="recipient">المستفيد</string>
+    <string name="change_recipient">تغيير المستفيد</string>
+    <string name="currency">العملة</string>
+    <string name="amount">المبلغ</string>
+    <string name="continue_action">متابعة</string>
+    <string name="review_transfer_hint">تأكد من بيانات الحوالة قبل الإرسال.</string>
+    <string name="confirm_send">تأكيد الإرسال</string>
+    <string name="edit_details">تعديل البيانات</string>
+    <string name="enter_recipient_transfer_id">أدخل معرف التحويل الخاص بالمستفيد</string>
+    <string name="transfer_id_manual_hint">يمكنك إدخال معرف التحويل الخاص بالمستفيد يدويًا.</string>
+    <string name="transfer_id">Transfer ID</string>
+    <string name="verify_recipient">التحقق من المستفيد</string>
+
+
+    <!-- Transfer Status -->
+    <string name="transfer_tracking">جاري متابعة الحوالة...</string>
+    <string name="transfer_tracking_failed">تعذر متابعة الحوالة</string>
+    <string name="retry">إعادة المحاولة</string>
+    <string name="transfer_success">تمت الحوالة بنجاح</string>
+    <string name="transfer_failed">تعذر تنفيذ الحوالة</string>
+    <string name="transfer_processing">جاري تنفيذ الحوالة</string>
+    <string name="transfer_request_received">تم استلام طلب الحوالة</string>
+    <string name="operation_id">رقم العملية</string>
+    <string name="status">الحالة</string>
+    <string name="back_to_home">العودة للرئيسية</string>
+    <string name="continue_in_background">متابعة في الخلفية</string>
+
+
+    <!-- Receive Money -->
+    <string name="receive_money_title">استقبال الأموال</string>
+    <string name="receive_share_hint">شارك معرفك أو رمز QR لاستقبال الأموال</string>
+    <string name="your_transfer_id">معرف التحويل الخاص بك</string>
+    <string name="copy">نسخ</string>
+    <string name="share">مشاركة</string>
+    <string name="qr_transfer_id_description">QR الخاص بمعرف التحويل</string>
+    <string name="receive_profile_missing">لم يتم إنشاء معرف تحويل لهذا الحساب بعد. أنشئه مرة واحدة وسيبقى مرتبطًا بحسابك.</string>
+    <string name="recipient_display_name">الاسم الظاهر للمستفيد</string>
+
+
+    <!-- Transfer Errors -->
+    <string name="transfer_id_length_error">معرف التحويل يجب أن يتكون من 16 محرفًا</string>
+    <string name="recipient_not_found">لم يتم العثور على صاحب هذا المعرف</string>
+    <string name="recipient_verification_failed">تعذر التحقق من المستفيد</string>
+    <string name="transfer_service_unreachable">تعذر الاتصال بخدمة الحوالات</string>
+    <string name="session_unauthorized">انتهت الجلسة أو غير مصرح بالطلب</string>
+    <string name="rate_limit_error">عدد الطلبات مرتفع، حاول بعد قليل</string>
+    <string name="service_temporarily_unavailable">الخدمة غير متاحة مؤقتًا</string>
+    <string name="transfer_send_failed">فشل إرسال الحوالة</string>
+    <string name="server_unreachable">تعذر الاتصال بالخادم</string>
+    <string name="unexpected_error">حدث خطأ غير متوقع</string>
+    <string name="request_not_found">لم يتم العثور على العملية</string>
+    <string name="request_status_read_failed">تعذر قراءة حالة العملية</string>
+    <string name="request_tracking_error">حدث خطأ أثناء متابعة العملية</string>
+
+
+
+
+
+    <!-- Exchange Rates -->
+    <string name="exchange_online_rates">أسعار الصرف عبر الإنترنت</string>
+    <string name="exchange_last_updated">آخر تحديث: %1$s</string>
+    <string name="exchange_provider">المصدر: %1$s</string>
+    <string name="exchange_load_failed">تعذر تحميل أسعار الصرف</string>
+    <string name="exchange_reference_note">أسعار الصرف المعروضة مرجعية ويتم جلبها من مزود أسعار عبر الإنترنت.</string>
+
+
+    <!-- Transfer History -->
+    <string name="history_all">الكل</string>
+    <string name="history_completed">مكتملة</string>
+    <string name="history_processing">قيد التنفيذ</string>
+    <string name="history_failed">فاشلة</string>
+    <string name="history_empty">لا توجد حوالات لعرضها</string>
+    <string name="history_load_failed">تعذر تحميل سجل الحوالات</string>
+    <string name="history_recipient_unknown">مستفيد غير معروف</string>
+
+    <string name="history_outgoing">صادرة</string>
+    <string name="history_incoming">واردة</string>
+    <string name="transfer_notification_channel">الحوالات</string>
+    <string name="transfer_notification_channel_description">إشعارات الحوالات المالية الواردة</string>
+    <string name="incoming_transfer_notification_title">حوالة واردة</string>
+    <string name="incoming_transfer_notification_body">استلمت %1$s %2$s من %3$s</string>
+</resources>

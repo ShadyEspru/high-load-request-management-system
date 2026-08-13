@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">HLRMS Cash</string>
+
+    <string name="good_morning">Good morning</string>
+    <string name="good_evening">Good evening</string>
+
+    <string name="available_balance">Balance</string>
+
+    <string name="send">Send</string>
+    <string name="receive">Receive</string>
+
+    <string name="services">Services</string>
+
+    <string name="exchange_rates">Exchange rates</string>
+    <string name="exchange_rates_subtitle">Currency rates</string>
+
+    <string name="transfer_history">Transfer history</string>
+    <string name="all_transactions">All transactions</string>
+
+    <string name="recent_transactions">Recent transactions</string>
+
+    <string name="newest_first">Newest first</string>
+    <string name="oldest_first">Oldest first</string>
+    <string name="largest_first">Largest transfers</string>
+    <string name="smallest_first">Smallest transfers</string>
+
+    <string name="settings">Settings</string>
+
+    <string name="dark_mode">Dark mode</string>
+    <string name="dark_mode_enabled">Enabled</string>
+    <string name="light_mode_enabled">Light mode</string>
+
+    <string name="language">Language</string>
+    <string name="arabic">العربية</string>
+    <string name="english">English</string>
+
+    <string name="account">My account</string>
+    <string name="account_information">Account information</string>
+    <string name="security_privacy">Security &amp; privacy</string>
+    <string name="help_support">Help &amp; support</string>
+    <string name="logout">Log out</string>
+
+    <string name="outgoing_transfer">Outgoing transfer</string>
+    <string name="incoming_transfer">Incoming transfer</string>
+    <string name="currency_exchange">Currency exchange</string>
+
+    <string name="today">Today</string>
+    <string name="yesterday">Yesterday</string>
+
+
+    <!-- Authentication -->
+    <string name="login_title">Sign in</string>
+    <string name="login_subtitle">Enter your account details to continue</string>
+    <string name="email_address">Email address</string>
+    <string name="password">Password</string>
+    <string name="no_account_create">No account yet? Create one</string>
+
+    <string name="register_title">Create account</string>
+    <string name="register_subtitle">Enter your details to create a new account</string>
+    <string name="first_name">First name</string>
+    <string name="last_name">Last name</string>
+    <string name="password_min_8">Must be at least 8 characters</string>
+    <string name="create_account">Create account</string>
+    <string name="already_have_account">Already have an account? Sign in</string>
+
+
+    <!-- QR Scanner -->
+    <string name="qr_camera_permission_required">Camera permission is required to scan QR codes</string>
+    <string name="qr_invalid_transfer">This QR code is not valid for transfers</string>
+    <string name="back">Back</string>
+    <string name="send_transfer">Send money</string>
+    <string name="search_by_transfer_id">Search by ID</string>
+    <string name="qr_scan_instruction">Place the QR code inside the frame to scan</string>
+    <string name="qr_camera_permission_needed">Camera permission is required to scan a QR code</string>
+    <string name="allow_camera">Allow camera access</string>
+
+
+    <!-- Send Money -->
+    <string name="review_transfer">Review transfer</string>
+    <string name="recipient">Recipient</string>
+    <string name="change_recipient">Change recipient</string>
+    <string name="currency">Currency</string>
+    <string name="amount">Amount</string>
+    <string name="continue_action">Continue</string>
+    <string name="review_transfer_hint">Review the transfer details before sending.</string>
+    <string name="confirm_send">Confirm transfer</string>
+    <string name="edit_details">Edit details</string>
+    <string name="enter_recipient_transfer_id">Enter the recipient transfer ID</string>
+    <string name="transfer_id_manual_hint">You can enter the recipient transfer ID manually.</string>
+    <string name="transfer_id">Transfer ID</string>
+    <string name="verify_recipient">Verify recipient</string>
+
+
+    <!-- Transfer Status -->
+    <string name="transfer_tracking">Tracking transfer...</string>
+    <string name="transfer_tracking_failed">Unable to track the transfer</string>
+    <string name="retry">Retry</string>
+    <string name="transfer_success">Transfer completed successfully</string>
+    <string name="transfer_failed">Transfer failed</string>
+    <string name="transfer_processing">Transfer is being processed</string>
+    <string name="transfer_request_received">Transfer request received</string>
+    <string name="operation_id">Operation ID</string>
+    <string name="status">Status</string>
+    <string name="back_to_home">Back to home</string>
+    <string name="continue_in_background">Continue in background</string>
+
+
+    <!-- Receive Money -->
+    <string name="receive_money_title">Receive money</string>
+    <string name="receive_share_hint">Share your Transfer ID or QR code to receive money</string>
+    <string name="your_transfer_id">Your Transfer ID</string>
+    <string name="copy">Copy</string>
+    <string name="share">Share</string>
+    <string name="qr_transfer_id_description">QR code for your Transfer ID</string>
+    <string name="receive_profile_missing">No Transfer ID has been created for this account yet. Create it once and it will remain linked to your account.</string>
+    <string name="recipient_display_name">Recipient display name</string>
+
+
+    <!-- Transfer Errors -->
+    <string name="transfer_id_length_error">Transfer ID must contain 16 characters</string>
+    <string name="recipient_not_found">No recipient was found for this ID</string>
+    <string name="recipient_verification_failed">Unable to verify the recipient</string>
+    <string name="transfer_service_unreachable">Unable to connect to the transfer service</string>
+    <string name="session_unauthorized">Your session has expired or the request is unauthorized</string>
+    <string name="rate_limit_error">Too many requests. Please try again shortly</string>
+    <string name="service_temporarily_unavailable">The service is temporarily unavailable</string>
+    <string name="transfer_send_failed">Unable to send the transfer</string>
+    <string name="server_unreachable">Unable to connect to the server</string>
+    <string name="unexpected_error">An unexpected error occurred</string>
+    <string name="request_not_found">The operation was not found</string>
+    <string name="request_status_read_failed">Unable to read the operation status</string>
+    <string name="request_tracking_error">An error occurred while tracking the operation</string>
+
+
+
+
+
+    <!-- Exchange Rates -->
+    <string name="exchange_online_rates">Online exchange rates</string>
+    <string name="exchange_last_updated">Last updated: %1$s</string>
+    <string name="exchange_provider">Source: %1$s</string>
+    <string name="exchange_load_failed">Unable to load exchange rates</string>
+    <string name="exchange_reference_note">Displayed exchange rates are reference rates retrieved from an online exchange-rate provider.</string>
+
+
+    <!-- Transfer History -->
+    <string name="history_all">All</string>
+    <string name="history_completed">Completed</string>
+    <string name="history_processing">Processing</string>
+    <string name="history_failed">Failed</string>
+    <string name="history_empty">No transfers to display</string>
+    <string name="history_load_failed">Unable to load transfer history</string>
+    <string name="history_recipient_unknown">Unknown recipient</string>
+
+    <string name="history_outgoing">Outgoing</string>
+    <string name="history_incoming">Incoming</string>
+    <string name="transfer_notification_channel">Transfers</string>
+    <string name="transfer_notification_channel_description">Incoming money transfer notifications</string>
+    <string name="incoming_transfer_notification_title">Incoming transfer</string>
+    <string name="incoming_transfer_notification_body">You received %1$s %2$s from %3$s</string>
+</resources>
