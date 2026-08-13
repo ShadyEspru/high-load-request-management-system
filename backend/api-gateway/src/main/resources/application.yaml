@@ -88,6 +88,15 @@ spring:
 
                 - AddResponseHeader=X-Gateway-Service,api-gateway
 
+            - id: transfer-api-route
+              uri: ${TRANSFER_SERVICE_URL:http://localhost:8090}
+
+              predicates:
+                - Path=/api/v1/transfer,/api/v1/transfer/**,/api/v1/wallet,/api/v1/wallet/**,/api/v1/exchange-rates
+
+              filters:
+                - AddResponseHeader=X-Gateway-Service,api-gateway
+
             - id: request-service-bulkhead-test-route
               uri: ${REQUEST_SERVICE_URL:http://localhost:8080}
 
