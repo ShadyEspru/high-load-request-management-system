@@ -52,4 +52,37 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
+    implementation(libs.retrofit.core)
+    implementation(libs.retrofit.gson)
+
+    implementation(libs.okhttp.core)
+    implementation(libs.okhttp.logging)
+
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.zxing.core)
+    val cameraXVersion = "1.6.1"
+
+    implementation(
+        "androidx.camera:camera-core:$cameraXVersion"
+    )
+
+    implementation(
+        "androidx.camera:camera-camera2:$cameraXVersion"
+    )
+
+    implementation(
+        "androidx.camera:camera-lifecycle:$cameraXVersion"
+    )
+
+    implementation(
+        "androidx.camera:camera-view:$cameraXVersion"
+    )
+
+    implementation(
+        "com.google.mlkit:barcode-scanning:17.3.0"
+    )
+    implementation(
+        "androidx.appcompat:appcompat:1.7.1"
+    )
 }
