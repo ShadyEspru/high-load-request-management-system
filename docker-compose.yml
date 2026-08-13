@@ -176,6 +176,7 @@ services:
     restart: unless-stopped
 
     environment:
+      TRANSFER_INTERNAL_SECRET: ${TRANSFER_INTERNAL_SECRET}
       DB_URL: jdbc:postgresql://postgres:5432/hlrms_requests
       DB_USERNAME: hlrms
       DB_PASSWORD: hlrms_password
@@ -186,6 +187,7 @@ services:
       RABBITMQ_PASSWORD: hlrms_password
 
       WORKER_FORCE_FAILURE: "false"
+      TRANSFER_API_URL: http://transfer-api:8090
 
     depends_on:
       postgres:
@@ -195,6 +197,9 @@ services:
         condition: service_healthy
 
       request-service:
+        condition: service_healthy
+
+      transfer-api:
         condition: service_healthy
 
   auth-service:
@@ -232,6 +237,44 @@ services:
       retries: 20
       start_period: 30s
 
+
+  transfer-api:
+    build:
+      context: ./android-app/transfer-api
+      dockerfile: Dockerfile
+
+    container_name: hlrms-transfer-api
+    restart: unless-stopped
+
+    environment:
+      TRANSFER_INTERNAL_SECRET: ${TRANSFER_INTERNAL_SECRET}
+      TRANSFER_DB_URL: jdbc:postgresql://postgres:5432/hlrms_transfer
+      TRANSFER_DB_USERNAME: hlrms
+      TRANSFER_DB_PASSWORD: hlrms_password
+
+      SERVER_PORT: 8090
+
+      JWT_ISSUER: hlrms-auth-service
+      JWT_SECRET: ${JWT_SECRET:-ReplaceThisWithAVeryLongRandomSecretKeyAtLeast32Characters}
+
+    expose:
+      - "8090"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:8090/actuator/health | grep -q '\"status\":\"UP\"'"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
   api-gateway:
     build:
       context: ./backend/api-gateway
@@ -243,6 +286,7 @@ services:
     environment:
       REQUEST_SERVICE_URL: http://request-service:8080
       AUTH_SERVICE_URL: http://auth-service:8081
+      TRANSFER_SERVICE_URL: http://transfer-api:8090
 
       SERVER_PORT: 8088
       CORS_ALLOWED_ORIGIN: http://localhost:3000
@@ -264,6 +308,8 @@ services:
       request-service:
         condition: service_healthy
       auth-service:
+        condition: service_healthy
+      transfer-api:
         condition: service_healthy
       redis:
         condition: service_healthy
