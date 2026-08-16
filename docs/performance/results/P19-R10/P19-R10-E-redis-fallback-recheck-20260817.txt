@@ -1,0 +1,50 @@
+P19-R10-E — Redis Failure / DB-backed Idempotency Recheck
+Date: 2026-08-17
+
+Final result:
+R10-E REDIS FALLBACK PASS ✅
+DB-backed Idempotency replay works while Redis is unavailable ✅
+
+Tested existing request:
+Idempotency-Key:
+P19-R10-20260817-000344-E-redis
+
+Expected / returned Request ID:
+ba4fea60-6010-44b2-be14-3952de586d67
+
+Redis unavailable:
+- request-service-1: healthy
+- request-service-2: healthy
+- request-service-lb: healthy
+- readiness endpoint: HTTP 200
+- E2 HTTP status: 200
+- Idempotency-Replayed: true
+- Returned ID matched original request
+
+After Redis recovery:
+- E3 HTTP status: 200
+- Idempotency-Replayed: true
+- Returned ID matched original request
+
+Database integrity:
+- Request status: COMPLETED
+- Requests for the logical operation: 1
+- Outbox events: 1
+- Processed events: 1
+
+Architectural finding:
+The original HAProxy health check used /actuator/health.
+When Redis was unavailable, the full health endpoint became unavailable/slow
+and HAProxy removed both request-service replicas, causing HTTP 503.
+
+Fix:
+- Request-service readiness configured separately from optional Redis dependency.
+- HAProxy request-service backend health check changed to:
+  /actuator/health/readiness
+- Docker request-service health check changed to:
+  /actuator/health/readiness
+- Redis failure no longer removes request-service replicas from routing.
+- PostgreSQL remains the durable fallback for idempotency correctness.
+
+Final classification:
+P19-R10-E PASS ✅
