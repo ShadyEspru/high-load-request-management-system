@@ -226,7 +226,6 @@ services:
       context: ./backend/request-worker
       dockerfile: Dockerfile
 
-    container_name: hlrms-request-worker
     restart: unless-stopped
 
     environment:

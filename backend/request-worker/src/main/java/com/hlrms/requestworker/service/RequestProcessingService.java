@@ -41,6 +41,9 @@ public class RequestProcessingService {
     @Value("${hlrms.worker.force-failure:false}")
     private boolean forceFailure;
 
+    @Value("${hlrms.worker.simulated-delay-ms:2000}")
+    private long simulatedDelayMs;
+
     public void processRequest(
             UUID requestId
     ) {
@@ -254,10 +257,14 @@ public class RequestProcessingService {
 
     private void simulateProcessing() {
 
+        if (simulatedDelayMs <= 0) {
+            return;
+        }
+
         try {
 
             Thread.sleep(
-                2_000
+                simulatedDelayMs
             );
 
         } catch (

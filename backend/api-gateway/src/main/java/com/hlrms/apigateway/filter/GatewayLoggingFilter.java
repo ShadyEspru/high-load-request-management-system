@@ -13,7 +13,7 @@ import java.time.Duration;
 import java.time.Instant;
 
 @Slf4j
-@Component
+// @Component  // temporarily disabled for gateway performance isolation
 public class GatewayLoggingFilter
     implements GlobalFilter, Ordered {
 

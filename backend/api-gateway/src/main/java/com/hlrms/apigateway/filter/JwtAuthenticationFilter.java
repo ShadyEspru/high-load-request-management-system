@@ -27,6 +27,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private static final List<String> PUBLIC_PATHS = List.of(
             "/api/v1/auth/",
+            "/api/v1/perf/",
             "/actuator",
             "/fallback/"
     );
@@ -75,7 +76,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         String token =
                 authorizationHeader.substring(BEARER_PREFIX.length());
 
-        if (!jwtService.isTokenValid(token)) {
+        Claims claims;
+
+        try {
+            claims = jwtService.validateAndExtractClaims(token);
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException ex) {
 
             log.warn(
                     "Unauthorized request. Invalid JWT. path={}",
@@ -87,9 +92,6 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                     "Invalid or expired access token."
             );
         }
-
-        Claims claims =
-                jwtService.validateAndExtractClaims(token);
 
         String userId =
                 jwtService.extractUserId(claims);
