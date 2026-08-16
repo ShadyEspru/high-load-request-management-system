@@ -4,8 +4,8 @@ import com.hlrms.requestservice.entity.OutboxEvent;
 import com.hlrms.requestservice.entity.RequestEntity;
 import com.hlrms.requestservice.entity.RequestStatus;
 import com.hlrms.requestservice.event.RequestCreatedEvent;
-import com.hlrms.requestservice.repository.OutboxEventRepository;
 import com.hlrms.requestservice.repository.RequestRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +23,7 @@ public class RequestCreationTransactionService {
 
     private final RequestRepository requestRepository;
 
-    private final OutboxEventRepository outboxEventRepository;
+    private final EntityManager entityManager;
 
     private final JsonMapper jsonMapper;
 
@@ -48,7 +48,7 @@ public class RequestCreationTransactionService {
                 .build();
 
         RequestEntity savedRequest =
-            requestRepository.saveAndFlush(requestEntity);
+            requestRepository.save(requestEntity);
 
         RequestCreatedEvent requestCreatedEvent =
             RequestCreatedEvent.of(savedRequest.getId());
@@ -67,7 +67,7 @@ public class RequestCreationTransactionService {
                 .payload(eventPayload)
                 .build();
 
-        outboxEventRepository.saveAndFlush(outboxEvent);
+        entityManager.persist(outboxEvent);
 
         return savedRequest;
     }

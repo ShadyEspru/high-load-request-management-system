@@ -7,7 +7,7 @@ scrape_configs:
     metrics_path: /actuator/prometheus
     static_configs:
       - targets:
-          - host.docker.internal:8080
+          - request-service-lb:8080
 
   - job_name: api-gateway
     metrics_path: /actuator/prometheus
@@ -25,7 +25,7 @@ scrape_configs:
     metrics_path: /actuator/prometheus
     static_configs:
       - targets:
-          - host.docker.internal:8082
+          - request-worker:8082
 
   - job_name: rabbitmq
     metrics_path: /metrics

@@ -6,7 +6,6 @@ import com.hlrms.requestworker.repository.RequestRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
@@ -18,9 +17,7 @@ public class RequestStatusTransactionService {
 
     private final RequestRepository requestRepository;
 
-    @Transactional(
-        propagation = Propagation.REQUIRES_NEW
-    )
+    @Transactional
     public boolean markAsProcessing(UUID requestId) {
         RequestEntity request =
             getRequiredRequest(requestId);
@@ -44,9 +41,7 @@ public class RequestStatusTransactionService {
         return true;
     }
 
-    @Transactional(
-        propagation = Propagation.REQUIRES_NEW
-    )
+    @Transactional
     public void markAsCompleted(
         UUID requestId,
         String processingResult
@@ -66,9 +61,7 @@ public class RequestStatusTransactionService {
         requestRepository.saveAndFlush(request);
     }
 
-    @Transactional(
-        propagation = Propagation.REQUIRES_NEW
-    )
+    @Transactional
     public void markAsFailed(
         UUID requestId,
         String processingError

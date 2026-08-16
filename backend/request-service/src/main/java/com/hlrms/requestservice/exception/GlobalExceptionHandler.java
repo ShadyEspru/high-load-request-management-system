@@ -6,6 +6,8 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.context.MessageSourceResolvable;
@@ -20,6 +22,11 @@ import java.time.Instant;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log =
+        LoggerFactory.getLogger(
+            GlobalExceptionHandler.class
+        );
 
     @ExceptionHandler(RequestNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleRequestNotFound(
@@ -170,6 +177,11 @@ public class GlobalExceptionHandler {
     handleGenericException(
         Exception exception
     ) {
+        log.error(
+            "Unhandled exception in request-service",
+            exception
+        );
+
         return buildErrorResponse(
             HttpStatus.INTERNAL_SERVER_ERROR,
             "An unexpected error occurred",

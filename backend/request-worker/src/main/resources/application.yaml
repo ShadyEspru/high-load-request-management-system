@@ -78,3 +78,4 @@ logging:
 hlrms:
   worker:
     force-failure: ${WORKER_FORCE_FAILURE:false}
+    simulated-delay-ms: ${WORKER_SIMULATED_DELAY_MS:2000}

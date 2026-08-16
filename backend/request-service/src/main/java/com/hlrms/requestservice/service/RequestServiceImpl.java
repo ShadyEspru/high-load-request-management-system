@@ -100,53 +100,7 @@ public class RequestServiceImpl implements RequestService {
             return redisReplay.get();
         }
 
-        String lockKey =
-            redisIdempotencyService
-                .buildLockKey(
-                    userScopedIdempotencyKey
-                );
-
-        LockAttempt lockAttempt =
-            redisDistributedLockService
-                .tryAcquire(lockKey);
-
-        if (
-            lockAttempt.redisAvailable()
-                && !lockAttempt.acquired()
-        ) {
-            redisDistributedLockService
-                .waitUntilUnlocked(lockKey);
-
-            Optional<CreateRequestResult>
-                concurrentReplay =
-                findExistingRequest(
-                    userId,
-                    normalizedKey,
-                    userScopedIdempotencyKey,
-                    fingerprint
-                );
-
-            if (concurrentReplay.isPresent()) {
-                requestMetrics.replayed();
-                return concurrentReplay.get();
-            }
-        }
-
         try {
-            Optional<CreateRequestResult>
-                existingRequest =
-                findExistingRequest(
-                    userId,
-                    normalizedKey,
-                    userScopedIdempotencyKey,
-                    fingerprint
-                );
-
-            if (existingRequest.isPresent()) {
-                requestMetrics.replayed();
-                return existingRequest.get();
-            }
-
             RequestEntity savedRequest =
                 requestCreationTransactionService
                     .createRequestWithOutboxEvent(
@@ -166,9 +120,8 @@ public class RequestServiceImpl implements RequestService {
             );
 
             log.info(
-                "Request created with distributed " +
-                "idempotency protection. " +
-                "requestId={}",
+                "Request created with database-backed " +
+                "idempotency protection. requestId={}",
                 savedRequest.getId()
             );
 
@@ -200,12 +153,9 @@ public class RequestServiceImpl implements RequestService {
                 concurrentRequest.getId()
             );
 
-            return replayResult;
+            requestMetrics.replayed();
 
-        } finally {
-            redisDistributedLockService.release(
-                lockAttempt
-            );
+            return replayResult;
         }
     }
 

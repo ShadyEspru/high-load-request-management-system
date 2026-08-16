@@ -25,20 +25,29 @@ public class RequestEventPublisher {
 
     private final RabbitTemplate rabbitTemplate;
 
-    public void publishRequestCreated(
+    public record PendingPublish(
+        RequestCreatedEvent event,
+        CorrelationData correlationData
+    ) {
+    }
+
+    public PendingPublish publishRequestCreatedAsync(
         RequestCreatedEvent event
     ) {
+
         CorrelationData correlationData =
             new CorrelationData(
                 event.eventId().toString()
             );
 
         try {
+
             rabbitTemplate.convertAndSend(
                 RabbitMqConstants.REQUEST_EXCHANGE,
                 RabbitMqConstants.REQUEST_ROUTING_KEY,
                 event,
                 message -> {
+
                     message.getMessageProperties()
                         .setMessageId(
                             event.eventId().toString()
@@ -71,6 +80,33 @@ public class RequestEventPublisher {
                 correlationData
             );
 
+            return new PendingPublish(
+                event,
+                correlationData
+            );
+
+        } catch (AmqpException exception) {
+
+            throw new MessagePublishingException(
+                "Failed to publish request event " +
+                "to RabbitMQ",
+                exception
+            );
+        }
+    }
+
+    public void awaitConfirmation(
+        PendingPublish pendingPublish
+    ) {
+
+        RequestCreatedEvent event =
+            pendingPublish.event();
+
+        CorrelationData correlationData =
+            pendingPublish.correlationData();
+
+        try {
+
             CorrelationData.Confirm confirm =
                 correlationData
                     .getFuture()
@@ -80,6 +116,7 @@ public class RequestEventPublisher {
                     );
 
             if (!confirm.ack()) {
+
                 throw new MessagePublishingException(
                     "RabbitMQ rejected the event. " +
                     "Reason: " +
@@ -91,6 +128,7 @@ public class RequestEventPublisher {
                 correlationData.getReturned();
 
             if (returned != null) {
+
                 throw new MessagePublishingException(
                     "RabbitMQ could not route the " +
                     "event. Reply: " +
@@ -98,8 +136,8 @@ public class RequestEventPublisher {
                 );
             }
 
-            log.info(
-                "Published outbox event. " +
+            log.debug(
+                "RabbitMQ confirmed outbox event. " +
                 "eventId={}, requestId={}",
                 event.eventId(),
                 event.requestId()
@@ -108,32 +146,51 @@ public class RequestEventPublisher {
         } catch (
             MessagePublishingException exception
         ) {
+
             throw exception;
-        } catch (AmqpException exception) {
-            throw new MessagePublishingException(
-                "Failed to publish request event " +
-                "to RabbitMQ",
-                exception
-            );
+
         } catch (InterruptedException exception) {
+
             Thread.currentThread().interrupt();
 
             throw new MessagePublishingException(
                 "Publishing was interrupted",
                 exception
             );
+
         } catch (TimeoutException exception) {
+
             throw new MessagePublishingException(
                 "Timed out while waiting for " +
                 "RabbitMQ confirmation",
                 exception
             );
+
         } catch (ExecutionException exception) {
+
             throw new MessagePublishingException(
                 "Failed while waiting for " +
                 "RabbitMQ confirmation",
                 exception
             );
         }
+    }
+
+    /*
+     * Kept for callers/tests that still require
+     * synchronous single-message publishing.
+     */
+    public void publishRequestCreated(
+        RequestCreatedEvent event
+    ) {
+
+        PendingPublish pendingPublish =
+            publishRequestCreatedAsync(
+                event
+            );
+
+        awaitConfirmation(
+            pendingPublish
+        );
     }
 }

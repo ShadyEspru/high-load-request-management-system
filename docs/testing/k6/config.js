@@ -7,7 +7,7 @@ import { SharedArray } from 'k6/data';
  */
 
 export const BASE_URL =
-  __ENV.BASE_URL || 'http://localhost:8080';
+  __ENV.BASE_URL || 'http://localhost:8088';
 
 export const API_PREFIX =
   __ENV.API_PREFIX || '/api/v1';
@@ -130,19 +130,14 @@ export function createRequestPayload() {
     `${__VU}-${__ITER}-${Date.now()}`;
 
   return {
-    externalReference: `k6-${uniqueId}`,
+    requestType: 'STANDARD',
 
-    type: 'STANDARD',
-
-    priority: 'NORMAL',
-
-    payload: {
+    payload: JSON.stringify({
       source: 'k6',
-
       operation: 'performance-test',
-
       testRunId: TEST_RUN_ID,
-    },
+      uniqueId,
+    }),
   };
 }
 

@@ -71,7 +71,7 @@ export function login(user = getTestUser()) {
   }
 
   const payload = JSON.stringify({
-    username: user.username,
+    email: user.username,
     password: user.password,
   });
 
@@ -138,6 +138,9 @@ export function createRequest(
         ...authorizationHeaders(token),
 
         'X-Correlation-ID':
+          correlationId(),
+
+        'Idempotency-Key':
           correlationId(),
       },
 

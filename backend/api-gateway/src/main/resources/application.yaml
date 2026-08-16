@@ -49,19 +49,30 @@ spring:
 
                 - AddResponseHeader=X-Gateway-Service,api-gateway
 
-            - id: request-service-route
+            - id: request-service-write-route
+              uri: ${REQUEST_SERVICE_URL:http://localhost:8080}
+
+              predicates:
+                - Path=/api/v1/requests
+                - Method=POST
+
+              filters:
+                - AddResponseHeader=X-Gateway-Service,api-gateway
+
+            - id: request-service-read-route
               uri: ${REQUEST_SERVICE_URL:http://localhost:8080}
 
               predicates:
                 - Path=/api/v1/requests,/api/v1/requests/**
+                - Method=GET
 
               filters:
                 - name: RequestRateLimiter
                   args:
                     key-resolver: "#{@authenticatedUserKeyResolver}"
-                    redis-rate-limiter.replenishRate: 10
-                    redis-rate-limiter.burstCapacity: 20
-                    redis-rate-limiter.requestedTokens: 1
+                    redis-rate-limiter.replenishRate: ${REQUEST_RATE_LIMIT_REPLENISH_RATE:10}
+                    redis-rate-limiter.burstCapacity: ${REQUEST_RATE_LIMIT_BURST_CAPACITY:20}
+                    redis-rate-limiter.requestedTokens: ${REQUEST_RATE_LIMIT_REQUESTED_TOKENS:1}
 
                 - name: CircuitBreaker
                   args:
@@ -85,6 +96,37 @@ spring:
                     jitter:
                       randomFactor: 0.25
                     timeout: 1500ms
+
+                - AddResponseHeader=X-Gateway-Service,api-gateway
+
+            - id: request-service-perf-ping-route
+              uri: ${REQUEST_SERVICE_URL:http://localhost:8080}
+
+              predicates:
+                - Path=/api/v1/perf/ping
+
+              filters:
+                - SetPath=/api/v1/ping
+
+                - AddResponseHeader=X-Gateway-Service,api-gateway
+
+            - id: request-service-perf-echo-route
+              uri: ${REQUEST_SERVICE_URL:http://localhost:8080}
+
+              predicates:
+                - Path=/api/v1/perf/echo
+
+              filters:
+                - AddResponseHeader=X-Gateway-Service,api-gateway
+
+            - id: request-service-perf-bypass-route
+              uri: ${REQUEST_SERVICE_URL:http://localhost:8080}
+
+              predicates:
+                - Path=/api/v1/perf/requests
+
+              filters:
+                - SetPath=/api/v1/requests
 
                 - AddResponseHeader=X-Gateway-Service,api-gateway
 
@@ -189,6 +231,12 @@ spring:
             response-timeout: ${GATEWAY_RESPONSE_TIMEOUT:10s}
 
             compression: true
+
+            pool:
+              type: fixed
+              max-connections: ${GATEWAY_HTTPCLIENT_MAX_CONNECTIONS:200}
+              acquire-timeout: ${GATEWAY_HTTPCLIENT_ACQUIRE_TIMEOUT_MS:5000}
+              metrics: true
 
     circuitbreaker:
       bulkhead:
@@ -313,8 +361,8 @@ resilience4j:
   bulkhead:
     configs:
       request-service-default:
-        max-concurrent-calls: 50
-        max-wait-duration: 0
+        max-concurrent-calls: ${REQUEST_SERVICE_BULKHEAD_MAX_CONCURRENT_CALLS:50}
+        max-wait-duration: ${REQUEST_SERVICE_BULKHEAD_MAX_WAIT_DURATION:0ms}
 
       auth-service-default:
         max-concurrent-calls: 20
