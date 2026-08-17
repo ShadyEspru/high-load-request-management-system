@@ -1,65 +1,79 @@
-# مخطط قاعدة البيانات لنظام HLRMS
+# مخططات قواعد البيانات النهائية - HLRMS
 
-يحتوي هذا المجلد على مخطط الكيانات والعلاقات  
-**Entity Relationship Diagram (ERD)** وقالب أولي لمخطط PostgreSQL.
+يحتوي هذا المجلد على الحزمة النهائية لمخططات قواعد البيانات في نظام **High-Load Request Management System (HLRMS)**.
 
-## الملفات
+## مصدر الحقيقة
 
-- `hlrms-database-erd.drawio`
-- `hlrms-database-erd.png`
-- `hlrms-database-erd.pdf`
-- `database-schema.sql`
+تم بناء محتوى مخططات ERD بالاعتماد على ملفات **Flyway migrations** الفعلية في المشروع، وليس على مخطط التصميم القديم:
 
-## الجداول الأساسية
+- `backend/request-service/src/main/resources/db/migration/`
+- `backend/auth-service/src/main/resources/db/migration/`
+- `android-app/transfer-api/src/main/resources/db/migration/`
 
-### `client_system`
+## المخططات
 
-يمثل النظام الخارجي الذي يرسل الطلبات إلى HLRMS.
+### 1. `requests-database-erd`
+يمثل قاعدة `hlrms_requests` ويعرض:
 
-### `request`
+- `requests`
+- `outbox_events`
+- `processed_events`
 
-يمثل الطلب الأساسي، ويحفظ نوعه، وأولويته، وحالته الحالية، والبيانات المرسلة، ومفتاح Idempotency.
+العلاقة بين `processed_events.request_id` و`requests.id` هي **Physical Foreign Key** حقيقية مع `ON DELETE CASCADE`.
+أما `outbox_events.aggregate_id` فهو **Logical Reference** إلى Request Aggregate ولا توجد عليه Foreign Key فعلية.
 
-### `request_status_history`
+### 2. `authentication-database-erd`
+يمثل قاعدة `hlrms_auth` ويعرض:
 
-يحفظ سجلًا غير قابل للاستبدال لتغيرات حالة كل طلب.
+- `users`
+- `roles`
+- `user_roles`
+- `refresh_tokens`
 
-### `processing_attempt`
+جميع علاقات هذا المخطط هي Foreign Keys فعلية كما هي معرفة في Flyway.
 
-يمثل كل محاولة منفصلة لمعالجة الطلب، بما يشمل العامل المنفذ، وأوقات التنفيذ، وسبب الفشل، وموعد المحاولة التالية.
+### 3. `transfer-demo-database-erd`
+يمثل قاعدة `hlrms_transfer` الخاصة بحالة الاستخدام التجريبية للحوالات ويعرض:
 
-### `processing_result`
+- `transfer_profiles`
+- `wallet_balances`
+- `transfer_transactions`
 
-يحفظ نتيجة محاولة المعالجة. العلاقة مع `processing_attempt` هي واحد إلى صفر أو واحد.
+العلاقة الفيزيائية الأساسية هي:
 
-### `retry_policy`
+`wallet_balances.user_id -> transfer_profiles.user_id`
 
-يحفظ إعدادات إعادة المحاولة، مثل الحد الأقصى للمحاولات، والتأخير، واستراتيجية Backoff، وأنواع الأخطاء القابلة لإعادة المحاولة.
+أما `request_id` وحقول هوية المرسل والمستلم فهي مراجع منطقية عبر حدود المجالات، وليست Cross-Database Foreign Keys.
 
-### `configuration_change`
+### 4. `database-landscape`
+يوضح ملكية البيانات على مستوى المجالات والخدمات:
 
-يحفظ سجل التغييرات التي يجريها مسؤول النظام على الإعدادات التشغيلية.
+- Auth Service -> `hlrms_auth`
+- Request Service -> `hlrms_requests`
+- Transfer API (Demo) -> `hlrms_transfer`
 
-### `outbox_event`
+العلاقات بين هذه القواعد هي **Logical Cross-Domain References** فقط، ولا توجد Foreign Keys بين قواعد البيانات المختلفة.
 
-يدعم نمط **Transactional Outbox** لمنع فقدان الرسائل بين PostgreSQL وRabbitMQ.
+## الصيغ
 
-## العلاقات
+لكل مخطط ثلاث صيغ:
 
-- `client_system 1 --- N request`
-- `retry_policy 1 --- N request`
-- `request 1 --- N request_status_history`
-- `request 1 --- N processing_attempt`
-- `processing_attempt 1 --- 0..1 processing_result`
-- `request 1 --- N outbox_event`
+- `.png`: للاستخدام في GitHub والعروض والتوثيق الرقمي.
+- `.pdf`: للتقرير والطباعة.
+- `.drawio`: مصدر Draw.io يحافظ على التصميم المعتمد بدقة ويمكن فتحه في diagrams.net / Draw.io وإضافة أو تعديل عناصر الصفحة.
 
-## قرارات التصميم
+كما يحتوي المجلد على:
 
-1. استخدم `UUID` لمعرفات الطلبات والكيانات الموزعة.
-2. استخدم `JSONB` للـPayload والنتائج المرنة دون ربط النظام بنوع طلب واحد.
-3. أضيف `version` إلى جدول `request` لدعم Optimistic Locking.
-4. قُيد رقم المحاولة ليكون فريدًا داخل كل طلب.
-5. أضيف قيد Idempotency لكل Client System لمنع إنشاء طلبات مكررة.
-6. فُصل سجل الحالات عن الطلب للحفاظ على تاريخ كامل لجميع الانتقالات.
-7. أضيف جدول Outbox لدعم نشر الرسائل بصورة موثوقة.
-8. ملف SQL يمثل مسودة تصميمية قابلة للتعديل عند بدء تنفيذ الـBackend.
+- `hlrms-database-diagrams.pdf`: ملف PDF موحد من أربع صفحات يضم المخططات الأربعة.
+
+## دلالة العلاقات
+
+- الخط المتصل: Physical Foreign Key.
+- الخط المتقطع: Logical Reference بدون Physical Foreign Key.
+- `PK`: Primary Key.
+- `FK`: Foreign Key.
+- `UQ`: Unique Constraint.
+
+## ملاحظة حول حدود البيانات
+
+HLRMS يفصل ملكية البيانات حسب حدود المجال. لذلك لا تُرسم علاقة Foreign Key بين قاعدتين منفصلتين ما لم تكن موجودة فعلًا في قاعدة البيانات. المعرّفات العابرة للخدمات مثل `user_id` و`request_id` تُعرض كمراجع منطقية فقط.
