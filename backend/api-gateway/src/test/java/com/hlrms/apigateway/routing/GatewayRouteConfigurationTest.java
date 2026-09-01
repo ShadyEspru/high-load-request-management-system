@@ -37,8 +37,12 @@ class GatewayRouteConfigurationTest {
         assertThat(routes)
             .extracting(RouteDefinition::getId)
             .contains(
-                "request-service-route",
                 "request-service-admin-route",
+                "request-service-write-route",
+                "request-service-read-route",
+                "request-service-perf-ping-route",
+                "request-service-perf-echo-route",
+                "request-service-perf-bypass-route",
                 "request-service-ping-route",
                 "request-service-resilience-test-route",
                 "request-service-bulkhead-test-route"
@@ -46,10 +50,12 @@ class GatewayRouteConfigurationTest {
     }
 
     @Test
-    void shouldConfigureMainRequestServiceRoute() {
+    void shouldConfigureReadRequestServiceRoute() {
 
         RouteDefinition route =
-            findRoute("request-service-route");
+            findRoute(
+                "request-service-read-route"
+            );
 
         assertThat(route.getUri())
             .isEqualTo(
@@ -59,7 +65,14 @@ class GatewayRouteConfigurationTest {
             );
 
         assertThat(route.getPredicates())
-            .hasSize(1);
+            .hasSize(2)
+            .extracting(predicate ->
+                predicate.getName()
+            )
+            .containsExactly(
+                "Path",
+                "Method"
+            );
 
         assertThat(
             route.getPredicates()
@@ -78,6 +91,64 @@ class GatewayRouteConfigurationTest {
             "/api/v1/requests",
             "/api/v1/requests/**"
         );
+
+        assertThat(
+            route.getPredicates()
+                .get(1)
+                .getArgs()
+                .values()
+        )
+        .contains("GET");
+    }
+
+    @Test
+    void shouldConfigureWriteRequestServiceRoute() {
+
+        RouteDefinition route =
+            findRoute(
+                "request-service-write-route"
+            );
+
+        assertThat(route.getUri())
+            .isEqualTo(
+                URI.create(
+                    "http://localhost:18080"
+                )
+            );
+
+        assertThat(route.getPredicates())
+            .hasSize(2)
+            .extracting(predicate ->
+                predicate.getName()
+            )
+            .containsExactly(
+                "Path",
+                "Method"
+            );
+
+        assertThat(
+            route.getPredicates()
+                .getFirst()
+                .getArgs()
+                .values()
+        )
+        .containsExactly("/api/v1/requests");
+
+        assertThat(
+            route.getPredicates()
+                .get(1)
+                .getArgs()
+                .values()
+        )
+        .contains("POST");
+
+        assertThat(route.getFilters())
+            .extracting(filter ->
+                filter.getName()
+            )
+            .containsExactly(
+                "AddResponseHeader"
+            );
     }
 
     @Test
@@ -115,10 +186,12 @@ class GatewayRouteConfigurationTest {
     }
 
     @Test
-    void shouldAddGatewayResponseHeaderToMainRoute() {
+    void shouldAddGatewayResponseHeaderToReadRoute() {
 
         RouteDefinition route =
-            findRoute("request-service-route");
+            findRoute(
+                "request-service-read-route"
+            );
 
         assertThat(route.getFilters())
             .extracting(filter -> filter.getName())
@@ -199,7 +272,7 @@ class GatewayRouteConfigurationTest {
                 .toList();
 
         assertThat(requestRoutes)
-            .hasSize(5)
+            .hasSize(9)
             .allSatisfy(route ->
                 assertThat(route.getUri())
                     .isEqualTo(
@@ -212,18 +285,24 @@ class GatewayRouteConfigurationTest {
         assertThat(requestRoutes)
             .extracting(RouteDefinition::getId)
             .containsExactlyInAnyOrder(
-                "request-service-route",
                 "request-service-admin-route",
+                "request-service-write-route",
+                "request-service-read-route",
+                "request-service-perf-ping-route",
+                "request-service-perf-echo-route",
+                "request-service-perf-bypass-route",
                 "request-service-ping-route",
                 "request-service-resilience-test-route",
                 "request-service-bulkhead-test-route"
             );
     }
     @Test
-    void shouldConfigureResilienceFiltersOnMainRequestRoute() {
+    void shouldConfigureResilienceFiltersOnReadRequestRoute() {
 
         RouteDefinition route =
-            findRoute("request-service-route");
+            findRoute(
+                "request-service-read-route"
+            );
 
         var filters =
             route.getFilters();

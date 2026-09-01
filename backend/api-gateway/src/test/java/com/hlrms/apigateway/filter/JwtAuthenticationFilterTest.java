@@ -77,7 +77,7 @@ class JwtAuthenticationFilterTest {
             jwtService,
             never()
         )
-        .isTokenValid(
+        .validateAndExtractClaims(
             org.mockito.ArgumentMatchers.anyString()
         );
     }
@@ -189,7 +189,7 @@ class JwtAuthenticationFilterTest {
             jwtService,
             never()
         )
-        .isTokenValid(
+        .validateAndExtractClaims(
             org.mockito.ArgumentMatchers.anyString()
         );
     }
@@ -239,11 +239,15 @@ class JwtAuthenticationFilterTest {
             );
 
         when(
-            jwtService.isTokenValid(
+            jwtService.validateAndExtractClaims(
                 "invalid-token"
             )
         )
-        .thenReturn(false);
+        .thenThrow(
+            new io.jsonwebtoken.JwtException(
+                "invalid token"
+            )
+        );
 
         GatewayFilterChain chain =
             currentExchange ->
@@ -271,11 +275,10 @@ class JwtAuthenticationFilterTest {
             );
 
         verify(
-            jwtService,
-            never()
+            jwtService
         )
         .validateAndExtractClaims(
-            org.mockito.ArgumentMatchers.anyString()
+            "invalid-token"
         );
     }
 
@@ -287,13 +290,6 @@ class JwtAuthenticationFilterTest {
                 "/api/v1/requests",
                 "valid-token"
             );
-
-        when(
-            jwtService.isTokenValid(
-                "valid-token"
-            )
-        )
-        .thenReturn(true);
 
         when(
             jwtService.validateAndExtractClaims(
@@ -395,13 +391,6 @@ class JwtAuthenticationFilterTest {
             );
 
         when(
-            jwtService.isTokenValid(
-                "valid-token"
-            )
-        )
-        .thenReturn(true);
-
-        when(
             jwtService.validateAndExtractClaims(
                 "valid-token"
             )
@@ -479,13 +468,6 @@ class JwtAuthenticationFilterTest {
                 "/api/v1/requests",
                 "valid-token"
             );
-
-        when(
-            jwtService.isTokenValid(
-                "valid-token"
-            )
-        )
-        .thenReturn(true);
 
         when(
             jwtService.validateAndExtractClaims(

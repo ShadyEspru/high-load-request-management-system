@@ -47,6 +47,18 @@
         </dependency>
 
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
@@ -99,6 +111,22 @@
     </dependencies>
 
     <build>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+            </testResource>
+
+            <testResource>
+                <directory>
+                    ../request-service/src/main/resources
+                </directory>
+
+                <includes>
+                    <include>db/migration/**</include>
+                </includes>
+            </testResource>
+        </testResources>
+
         <plugins>
 
             <plugin>

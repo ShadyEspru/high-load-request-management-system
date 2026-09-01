@@ -3,8 +3,8 @@ package com.hlrms.requestservice.service;
 import com.hlrms.requestservice.entity.OutboxEvent;
 import com.hlrms.requestservice.entity.RequestEntity;
 import com.hlrms.requestservice.entity.RequestStatus;
-import com.hlrms.requestservice.repository.OutboxEventRepository;
 import com.hlrms.requestservice.repository.RequestRepository;
+import jakarta.persistence.EntityManager;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.junit.jupiter.api.Test;
@@ -12,7 +12,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.mockito.ArgumentCaptor;
 
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -30,7 +29,7 @@ class RequestCreationTransactionServiceTest {
 
 
     @Mock
-    private OutboxEventRepository outboxEventRepository;
+    private EntityManager entityManager;
 
 
     private final JsonMapper jsonMapper =
@@ -45,7 +44,7 @@ class RequestCreationTransactionServiceTest {
 
         service = new RequestCreationTransactionService(
                 requestRepository,
-                outboxEventRepository,
+                entityManager,
                 jsonMapper
         );
 
@@ -63,7 +62,7 @@ class RequestCreationTransactionServiceTest {
                         .build();
 
 
-        when(requestRepository.saveAndFlush(any()))
+        when(requestRepository.save(any()))
                 .thenReturn(savedRequest);
 
 
@@ -85,15 +84,15 @@ class RequestCreationTransactionServiceTest {
 
 
         verify(requestRepository)
-                .saveAndFlush(any(RequestEntity.class));
+                .save(any(RequestEntity.class));
 
 
         ArgumentCaptor<OutboxEvent> captor =
                 ArgumentCaptor.forClass(OutboxEvent.class);
 
 
-        verify(outboxEventRepository)
-                .saveAndFlush(captor.capture());
+        verify(entityManager)
+                .persist(captor.capture());
 
 
         OutboxEvent event =

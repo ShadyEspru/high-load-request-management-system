@@ -6,7 +6,6 @@ import com.hlrms.requestservice.entity.RequestEntity;
 import com.hlrms.requestservice.metrics.RequestMetrics;
 import com.hlrms.requestservice.repository.RequestRepository;
 import com.hlrms.requestservice.security.CurrentUserProvider;
-import com.hlrms.requestservice.service.RedisDistributedLockService.LockAttempt;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -101,22 +100,6 @@ class RequestServiceImplIdempotencyTest {
         ))
         .thenReturn(Optional.empty());
 
-        when(redisIdempotencyService.buildLockKey(
-                anyString()
-        ))
-        .thenReturn("lock-key");
-
-        when(redisDistributedLockService.tryAcquire(
-                anyString()
-        ))
-        .thenReturn(
-            LockAttempt.acquired(
-                "lock-key",
-                "token"
-            )
-        );
-
-
         RequestEntity savedRequest =
             RequestEntity.builder()
                 .id(UUID.randomUUID())
@@ -176,9 +159,8 @@ class RequestServiceImplIdempotencyTest {
             );
 
 
-        verify(redisDistributedLockService)
-            .release(
-                any(LockAttempt.class)
-            );
+        verifyNoInteractions(
+            redisDistributedLockService
+        );
     }
 }
