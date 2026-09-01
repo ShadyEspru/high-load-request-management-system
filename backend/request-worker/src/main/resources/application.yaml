@@ -1,0 +1,81 @@
+spring:
+  application:
+    name: request-worker
+  
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/hlrms_requests}
+    username: ${DB_USERNAME:hlrms}
+    password: ${DB_PASSWORD:hlrms_password}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+    open-in-view: false
+
+    properties:
+      hibernate:
+        format_sql: true
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:hlrms}
+    password: ${RABBITMQ_PASSWORD:hlrms_password}
+
+    listener:
+      simple:
+        acknowledge-mode: auto
+        prefetch: 10
+        concurrency: 1
+        max-concurrency: 4
+        default-requeue-rejected: false
+
+        retry:
+          enabled: true
+          initial-interval: 1s
+          multiplier: 2
+          max-interval: 5s
+          max-attempts: 3
+
+server:
+  port: ${SERVER_PORT:8082}
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - info
+          - metrics
+          - prometheus
+
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+logging:
+  level:
+    com.hlrms.requestworker: INFO
+
+hlrms:
+  worker:
+    force-failure: ${WORKER_FORCE_FAILURE:false}
+    simulated-delay-ms: ${WORKER_SIMULATED_DELAY_MS:2000}

@@ -1,0 +1,313 @@
+openapi: 3.1.0
+info:
+  title: HLRMS API
+  version: 1.0.0
+  description: العقد العام المنفذ لنظام High-Load Request Management System.
+servers:
+  - url: http://localhost:8088
+    description: API Gateway Load Balancer
+tags:
+  - name: Authentication
+  - name: Requests
+  - name: Administration
+
+paths:
+  /api/v1/auth/register:
+    post:
+      tags: [Authentication]
+      summary: تسجيل مستخدم جديد
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RegisterRequest'}
+      responses:
+        '201':
+          description: تم إنشاء المستخدم
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RegisterResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /api/v1/auth/login:
+    post:
+      tags: [Authentication]
+      summary: تسجيل الدخول
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LoginRequest'}
+      responses:
+        '200':
+          description: رموز الوصول والتجديد
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AuthResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+
+  /api/v1/auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: تجديد Access Token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RefreshTokenRequest'}
+      responses:
+        '200':
+          description: رموز محدثة
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AuthResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+
+  /api/v1/requests:
+    post:
+      tags: [Requests]
+      summary: قبول طلب جديد أوإعادة نتيجة Idempotency
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateRequest'}
+      responses:
+        '201':
+          description: طلب جديد
+          headers:
+            Location: {schema: {type: string, format: uri-reference}}
+            Idempotency-Replayed: {schema: {type: boolean, example: false}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RequestResponse'}
+        '200':
+          description: Replay للطلب نفسه
+          headers:
+            Idempotency-Replayed: {schema: {type: boolean, example: true}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RequestResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '409': {$ref: '#/components/responses/Conflict'}
+    get:
+      tags: [Requests]
+      summary: عرض طلبات المستخدم الحالي
+      parameters:
+        - $ref: '#/components/parameters/Status'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: صفحة من طلبات المستخدم
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PageResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+
+  /api/v1/requests/{id}:
+    get:
+      tags: [Requests]
+      summary: قراءة طلب يملكه المستخدم الحالي
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: بيانات الطلب
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RequestResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {$ref: '#/components/responses/NotFound'}
+
+  /api/v1/admin/requests:
+    get:
+      tags: [Administration]
+      summary: عرض كل الطلبات للمسؤول
+      parameters:
+        - $ref: '#/components/parameters/Status'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: صفحة من جميع الطلبات
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PageResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+
+  /api/v1/admin/requests/{id}:
+    get:
+      tags: [Administration]
+      summary: قراءة طلب محدد للمسؤول
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: بيانات الطلب
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RequestResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: {type: string, minLength: 1, maxLength: 100}
+    CorrelationId:
+      name: X-Correlation-ID
+      in: header
+      required: false
+      schema: {type: string}
+    RequestId:
+      name: id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    Status:
+      name: status
+      in: query
+      required: false
+      schema: {$ref: '#/components/schemas/RequestStatus'}
+    Page:
+      name: page
+      in: query
+      schema: {type: integer, minimum: 0, default: 0}
+    Size:
+      name: size
+      in: query
+      schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+  responses:
+    BadRequest:
+      description: الطلب غير صالح
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ApiError'}
+    Unauthorized:
+      description: المصادقة مفقودة أوغير صالحة
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ApiError'}
+    Forbidden:
+      description: الدور غير مخول
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ApiError'}
+    NotFound:
+      description: المورد غير موجود
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ApiError'}
+    Conflict:
+      description: تعارض في البريد أوIdempotency
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ApiError'}
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [email, password, firstName, lastName]
+      properties:
+        email: {type: string, format: email, maxLength: 320}
+        password: {type: string, minLength: 8, maxLength: 100}
+        firstName: {type: string, maxLength: 100}
+        lastName: {type: string, maxLength: 100}
+    RegisterResponse:
+      type: object
+      required: [id, email, firstName, lastName, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        email: {type: string, format: email}
+        firstName: {type: string}
+        lastName: {type: string}
+        createdAt: {type: string, format: date-time}
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: {type: string, format: email}
+        password: {type: string}
+    RefreshTokenRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken: {type: string}
+    AuthResponse:
+      type: object
+      required: [accessToken, refreshToken, tokenType]
+      properties:
+        accessToken: {type: string}
+        refreshToken: {type: string}
+        tokenType: {type: string, example: Bearer}
+    CreateRequest:
+      type: object
+      required: [requestType, payload]
+      properties:
+        requestType: {type: string, minLength: 1, maxLength: 100}
+        payload: {type: string, minLength: 1, maxLength: 10000}
+    RequestStatus:
+      type: string
+      enum: [PENDING, PROCESSING, COMPLETED, FAILED]
+    RequestResponse:
+      type: object
+      required: [id, idempotencyKey, requestType, payload, status, createdAt, updatedAt, version]
+      properties:
+        id: {type: string, format: uuid}
+        idempotencyKey: {type: string}
+        requestType: {type: string}
+        payload: {type: string}
+        status: {$ref: '#/components/schemas/RequestStatus'}
+        result: {type: [string, 'null']}
+        errorMessage: {type: [string, 'null']}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+        completedAt: {type: [string, 'null'], format: date-time}
+        version: {type: integer, format: int64}
+    PageResponse:
+      type: object
+      required: [content, page, size, totalElements, totalPages, first, last, hasNext, hasPrevious]
+      properties:
+        content:
+          type: array
+          items: {$ref: '#/components/schemas/RequestResponse'}
+        page: {type: integer}
+        size: {type: integer}
+        totalElements: {type: integer, format: int64}
+        totalPages: {type: integer}
+        first: {type: boolean}
+        last: {type: boolean}
+        hasNext: {type: boolean}
+        hasPrevious: {type: boolean}
+    ApiError:
+      type: object
+      properties:
+        timestamp: {type: string, format: date-time}
+        status: {type: integer}
+        error: {type: string}
+        message: {type: string}
+        path: {type: string}
+        details: {}
+
+security:
+  - bearerAuth: []

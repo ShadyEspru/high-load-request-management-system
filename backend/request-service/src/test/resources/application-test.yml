@@ -1,0 +1,44 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/hlrms_requests
+    username: hlrms
+    password: hlrms_password
+
+    hikari:
+      maximum-pool-size: 2
+      minimum-idle: 0
+      connection-timeout: 10000
+      idle-timeout: 10000
+      max-lifetime: 30000
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: hlrms_redis_password
+      database: 0
+      connect-timeout: 2s
+      timeout: 2s
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: hlrms
+    password: hlrms_password
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+  flyway:
+    enabled: true
+
+hlrms:
+  outbox:
+    publisher-enabled: false
+
+management:
+  health:
+    rabbit:
+      enabled: false

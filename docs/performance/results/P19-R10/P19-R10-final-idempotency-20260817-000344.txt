@@ -1,0 +1,85 @@
+
+==================================================
+P19-R10 FINAL INTEGRITY + IDEMPOTENCY
+RUN=P19-R10-20260817-000344
+==================================================
+
+========== PREFLIGHT ==========
+Outbox=0|0|0
+Rabbit ready=0 unacked=0 consumers=16
+DLQ=4
+PREFLIGHT CLEAN ✅
+
+========== R10-A REPLAY ==========
+A1 status=201 replayed=false id=92a4173b-5707-4991-977a-1cdc636d8f74
+A2 status=200 replayed=true id=92a4173b-5707-4991-977a-1cdc636d8f74
+R10-A REPLAY PASS ✅
+
+========== R10-B FINGERPRINT CONFLICT ==========
+B status=409 replayed=<none> id=<none>
+R10-B CONFLICT PASS ✅
+
+========== R10-C 100 CONCURRENT DUPLICATES ==========
+TOTAL=100
+STATUS_201=1
+STATUS_200=99
+STATUS_OTHER=0
+UNIQUE_IDS=1
+TRANSPORT_ERRORS=0
+R10-C CONCURRENT IDEMPOTENCY PASS ✅
+
+========== R10-D USER-SCOPED IDEMPOTENCY ==========
+DA1 status=201 replayed=false id=50630c75-1566-4b86-b491-36bfe31efa7c
+DB1 status=201 replayed=false id=2ff3463d-9575-47a6-a1e2-22bd8497d20c
+DA2 status=200 replayed=true id=50630c75-1566-4b86-b491-36bfe31efa7c
+DB2 status=200 replayed=true id=2ff3463d-9575-47a6-a1e2-22bd8497d20c
+R10-D USER-SCOPED IDEMPOTENCY PASS ✅
+
+========== R10-E REDIS FAILURE FALLBACK ==========
+ Container hlrms-redis Stopping 
+ Container hlrms-redis Stopped 
+REDIS CONFIRMED DOWN ✅
+E1 status=201 replayed=false id=ba4fea60-6010-44b2-be14-3952de586d67
+E2 status=503 replayed=<none> id=<none>
+ Container hlrms-redis Starting 
+ Container hlrms-redis Started 
+REDIS RUNNING ✅
+E3 status=503 replayed=<none> id=<none>
+❌ R10-E REDIS FALLBACK FAILED
+
+========== FINAL PIPELINE DRAIN ==========
+[1] outbox=0|0|0 ready=0 unacked=0 consumers=16
+[2] outbox=0|0|0 ready=0 unacked=0 consumers=16
+[3] outbox=0|0|0 ready=0 unacked=0 consumers=16
+
+========== DATABASE RECONCILIATION ==========
+
+REQUEST_ROWS=5
+OUTBOX_ROWS=5
+PUBLISHED_ROWS=5
+PROCESSED_ROWS=5
+MAX_PROCESSED_PER_REQUEST=1
+
+A_ROWS=1
+C_ROWS=1
+D_ROWS=2
+D_USERS=2
+E_ROWS=1
+
+FINAL_OUTBOX_STATE=0|0|0
+FINAL_READY=0
+FINAL_UNACK=0
+FINAL_CONSUMERS=16
+DLQ=4 -> 4
+R10 DATABASE RECONCILIATION PASS ✅
+
+================ R10 SUMMARY ================
+A_PASS=1
+B_PASS=1
+C_PASS=1
+D_PASS=1
+E_PASS=0
+DB_PASS=1
+
+❌ P19-R10 REQUIRES INVESTIGATION
+LOG=/tmp/P19-R10-20260817-000344.txt

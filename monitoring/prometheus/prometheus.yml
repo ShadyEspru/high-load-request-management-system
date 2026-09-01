@@ -1,0 +1,57 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: request-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - request-service-lb:8080
+
+  - job_name: api-gateway
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - host.docker.internal:8088
+
+  - job_name: auth-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - auth-service:8081
+
+  - job_name: request-worker
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - request-worker:8082
+
+  - job_name: rabbitmq
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - rabbitmq:15692
+
+  - job_name: rabbitmq-detailed
+    metrics_path: /metrics/detailed
+
+    params:
+      family:
+        - queue_coarse_metrics
+        - queue_consumer_count
+        - queue_delivery_metrics
+
+    static_configs:
+      - targets:
+          - rabbitmq:15692
+
+  - job_name: postgres
+    static_configs:
+      - targets:
+          - postgres-exporter:9187
+
+  - job_name: redis
+    static_configs:
+      - targets:
+          - redis-exporter:9121

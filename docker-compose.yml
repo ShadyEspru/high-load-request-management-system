@@ -1,0 +1,496 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: hlrms-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: hlrms_requests
+      POSTGRES_USER: hlrms
+      POSTGRES_PASSWORD: hlrms_password
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init:/docker-entrypoint-initdb.d:ro
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U hlrms -d hlrms_requests"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter
+    container_name: hlrms-postgres-exporter
+
+    environment:
+      DATA_SOURCE_NAME: "postgresql://hlrms:hlrms_password@postgres:5432/hlrms_auth?sslmode=disable"
+
+    ports:
+      - "9187:9187"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: hlrms-rabbitmq
+    restart: unless-stopped
+
+    environment:
+      RABBITMQ_DEFAULT_USER: hlrms
+      RABBITMQ_DEFAULT_PASS: hlrms_password
+
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "rabbitmq-diagnostics",
+          "-q",
+          "ping"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:8-alpine
+    container_name: hlrms-redis
+    restart: unless-stopped
+
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --save
+      - "60"
+      - "1000"
+      - --requirepass
+      - hlrms_redis_password
+
+    ports:
+      - "6379:6379"
+
+    volumes:
+      - redis_data:/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "REDISCLI_AUTH=hlrms_redis_password redis-cli ping"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis-exporter:
+    image: oliver006/redis_exporter
+    container_name: hlrms-redis-exporter
+
+    environment:
+      REDIS_ADDR: redis://redis:6379
+      REDIS_PASSWORD: hlrms_redis_password
+
+    ports:
+      - "9121:9121"
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+  request-service:
+    build:
+      context: ./backend/request-service
+      dockerfile: Dockerfile
+
+    restart: unless-stopped
+
+    environment:
+      LOGGING_LEVEL_COM_HLRMS_REQUESTSERVICE_MESSAGING: ${REQUEST_MESSAGING_LOG_LEVEL:-INFO}
+      LOGGING_LEVEL_COM_HLRMS_REQUESTSERVICE_SERVICE: ${REQUEST_SERVICE_LOG_LEVEL:-INFO}
+      DB_URL: jdbc:postgresql://postgres:5432/hlrms_requests
+      DB_USERNAME: hlrms
+      DB_PASSWORD: hlrms_password
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: ${REQUEST_DB_POOL_MAX_SIZE:-10}
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: ${REQUEST_DB_POOL_MIN_IDLE:-10}
+
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: hlrms
+      RABBITMQ_PASSWORD: hlrms_password
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: hlrms_redis_password
+      REDIS_DATABASE: 0
+
+      OUTBOX_PUBLISHER_ENABLED: ${OUTBOX_PUBLISHER_ENABLED:-false}
+      OUTBOX_INITIAL_DELAY: ${OUTBOX_INITIAL_DELAY:-2000}
+      OUTBOX_FIXED_DELAY: ${OUTBOX_FIXED_DELAY:-1000}
+      OUTBOX_BATCH_SIZE: ${OUTBOX_BATCH_SIZE:-20}
+      OUTBOX_MAX_ATTEMPTS: ${OUTBOX_MAX_ATTEMPTS:-10}
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+      rabbitmq:
+        condition: service_healthy
+
+      redis:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:8080/actuator/health/readiness | grep -q '\"status\":\"UP\"'"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  outbox-publisher:
+    image: high-load-request-management-system-request-service
+    restart: unless-stopped
+
+    environment:
+      LOGGING_LEVEL_COM_HLRMS_REQUESTSERVICE_MESSAGING: ${REQUEST_MESSAGING_LOG_LEVEL:-INFO}
+      LOGGING_LEVEL_COM_HLRMS_REQUESTSERVICE_SERVICE: ${REQUEST_SERVICE_LOG_LEVEL:-INFO}
+
+      DB_URL: jdbc:postgresql://postgres:5432/hlrms_requests
+      DB_USERNAME: hlrms
+      DB_PASSWORD: hlrms_password
+
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: ${OUTBOX_DB_POOL_MAX_SIZE:-10}
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: ${OUTBOX_DB_POOL_MIN_IDLE:-5}
+
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: hlrms
+      RABBITMQ_PASSWORD: hlrms_password
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: hlrms_redis_password
+      REDIS_DATABASE: 0
+
+      OUTBOX_PUBLISHER_ENABLED: "true"
+      OUTBOX_INITIAL_DELAY: ${OUTBOX_INITIAL_DELAY:-2000}
+      OUTBOX_FIXED_DELAY: ${OUTBOX_FIXED_DELAY:-1000}
+      OUTBOX_BATCH_SIZE: ${OUTBOX_BATCH_SIZE:-20}
+      OUTBOX_MAX_ATTEMPTS: ${OUTBOX_MAX_ATTEMPTS:-10}
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  request-worker:
+    build:
+      context: ./backend/request-worker
+      dockerfile: Dockerfile
+
+    container_name: hlrms-request-worker
+    restart: unless-stopped
+
+    environment:
+      TRANSFER_INTERNAL_SECRET: ${TRANSFER_INTERNAL_SECRET}
+      DB_URL: jdbc:postgresql://postgres:5432/hlrms_requests
+      DB_USERNAME: hlrms
+      DB_PASSWORD: hlrms_password
+
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: hlrms
+      RABBITMQ_PASSWORD: hlrms_password
+
+      WORKER_FORCE_FAILURE: "false"
+      WORKER_SIMULATED_DELAY_MS: ${WORKER_SIMULATED_DELAY_MS:-2000}
+      TRANSFER_API_URL: http://transfer-api:8090
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+      rabbitmq:
+        condition: service_healthy
+
+      request-service:
+        condition: service_healthy
+
+      transfer-api:
+        condition: service_healthy
+
+  auth-service:
+    build:
+      context: ./backend/auth-service
+      dockerfile: Dockerfile
+
+    container_name: hlrms-auth-service
+    restart: unless-stopped
+
+    environment:
+      AUTH_DB_URL: jdbc:postgresql://postgres:5432/hlrms_auth
+      AUTH_DB_USERNAME: hlrms
+      AUTH_DB_PASSWORD: hlrms_password
+
+      SERVER_PORT: 8081
+
+      JWT_SECRET: ${JWT_SECRET:-ReplaceThisWithAVeryLongRandomSecretKeyAtLeast32Characters}
+
+    ports:
+      - "8081:8081"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:8081/actuator/health | grep -q '\"status\":\"UP\"'"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+
+  transfer-api:
+    build:
+      context: ./android-app/transfer-api
+      dockerfile: Dockerfile
+
+    container_name: hlrms-transfer-api
+    restart: unless-stopped
+
+    environment:
+      TRANSFER_INTERNAL_SECRET: ${TRANSFER_INTERNAL_SECRET}
+      TRANSFER_DB_URL: jdbc:postgresql://postgres:5432/hlrms_transfer
+      TRANSFER_DB_USERNAME: hlrms
+      TRANSFER_DB_PASSWORD: hlrms_password
+
+      SERVER_PORT: 8090
+
+      JWT_ISSUER: hlrms-auth-service
+      JWT_SECRET: ${JWT_SECRET:-ReplaceThisWithAVeryLongRandomSecretKeyAtLeast32Characters}
+
+    expose:
+      - "8090"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:8090/actuator/health | grep -q '\"status\":\"UP\"'"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  request-service-lb:
+    image: haproxy:3.4-alpine
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:19999:9999"
+      - "18080:8080"
+
+
+    volumes:
+      - ./infrastructure/haproxy/request-service.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1:8080/actuator/health/readiness >/dev/null || exit 1"
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+
+    restart: unless-stopped
+
+    environment:
+      REQUEST_SERVICE_URL: ${REQUEST_SERVICE_URL:-http://request-service-lb:8080}
+      GATEWAY_HTTPCLIENT_MAX_CONNECTIONS: ${GATEWAY_HTTPCLIENT_MAX_CONNECTIONS:-300}
+      JAVA_TOOL_OPTIONS: "-Dreactor.netty.ioWorkerCount=${REACTOR_NETTY_IO_WORKER_COUNT:-8} -Dreactor.netty.ioSelectCount=${REACTOR_NETTY_IO_SELECT_COUNT:-1}"
+      GATEWAY_HTTPCLIENT_ACQUIRE_TIMEOUT_MS: ${GATEWAY_HTTPCLIENT_ACQUIRE_TIMEOUT_MS:-5000}
+      AUTH_SERVICE_URL: http://auth-service:8081
+      TRANSFER_SERVICE_URL: http://transfer-api:8090
+
+      SERVER_PORT: 8088
+      CORS_ALLOWED_ORIGIN: http://localhost:3000
+
+      JWT_SECRET: ${JWT_SECRET:-ReplaceThisWithAVeryLongRandomSecretKeyAtLeast32Characters}
+
+      GATEWAY_CONNECT_TIMEOUT_MS: 2000
+      GATEWAY_RESPONSE_TIMEOUT: 10s
+      SPRING_CLOUD_GATEWAY_SERVER_WEBFLUX_HTTPCLIENT_POOL_METRICS: ${GATEWAY_HTTPCLIENT_POOL_METRICS:-false}
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: hlrms_redis_password
+      REDIS_DATABASE: 1
+
+      REQUEST_RATE_LIMIT_REPLENISH_RATE: ${REQUEST_RATE_LIMIT_REPLENISH_RATE:-10}
+      REQUEST_RATE_LIMIT_BURST_CAPACITY: ${REQUEST_RATE_LIMIT_BURST_CAPACITY:-20}
+      REQUEST_RATE_LIMIT_REQUESTED_TOKENS: ${REQUEST_RATE_LIMIT_REQUESTED_TOKENS:-1}
+      REQUEST_SERVICE_BULKHEAD_MAX_CONCURRENT_CALLS: ${REQUEST_SERVICE_BULKHEAD_MAX_CONCURRENT_CALLS:-50}
+      REQUEST_SERVICE_BULKHEAD_MAX_WAIT_DURATION: ${REQUEST_SERVICE_BULKHEAD_MAX_WAIT_DURATION:-0ms}
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: ${GATEWAY_ACTUATOR_EXPOSURE_INCLUDE:-health,info,metrics,prometheus,gateway}
+      RESILIENCE4J_CIRCUITBREAKER_INSTANCES_REQUESTSERVICECIRCUITBREAKER_EVENTCONSUMERBUFFERSIZE: ${REQUEST_SERVICE_CB_EVENT_BUFFER_SIZE:-100}
+      LOGGING_LEVEL_COM_HLRMS_APIGATEWAY_FILTER_GATEWAYLOGGINGFILTER: ${GATEWAY_REQUEST_LOG_LEVEL:-INFO}
+
+    depends_on:
+      request-service-lb:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      transfer-api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:8088/actuator/health | grep -q '\"status\":\"UP\"'"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+
+  api-gateway-lb:
+    image: haproxy:3.4-alpine
+    restart: unless-stopped
+
+    ports:
+      - "8088:8088"
+      - "127.0.0.1:19998:9998"
+
+    volumes:
+      - ./infrastructure/haproxy/api-gateway.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1:8088/actuator/health | grep -q '\"status\":\"UP\"'"
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    container_name: hlrms-prometheus
+
+    ports:
+      - "9090:9090"
+
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: hlrms-grafana
+    restart: unless-stopped
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: hlrms_grafana_password
+      GF_USERS_ALLOW_SIGN_UP: "false"
+
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+
+    depends_on:
+      prometheus:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:3000/api/health | grep -q '\"database\": \"ok\"'"
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
+  redis_data:
+  grafana_data:

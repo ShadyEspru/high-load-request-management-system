@@ -9,3 +9,19 @@ build/
 .DS_Store
 node_modules/
 reports/load-tests/*.html
+
+# Python tooling caches
+__pycache__/
+*.py[cod]
+
+# Local Grafana dashboard backups
+monitoring/grafana/backups/
+
+# Local development backups
+backup-*/
+**/*.bak-*
+android-app/backup-app-icon/
+
+# Local machine startup scripts
+scripts/start-hlrms-windows.vbs
+scripts/start-hlrms.sh
