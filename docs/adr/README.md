@@ -33,7 +33,7 @@ docs/adr/
 | ADR-002 | استخدام PostgreSQL كقاعدة البيانات الأساسية | Accepted |
 | ADR-003 | استخدام Redis للتخزين المؤقت والحالة المؤقتة | Accepted |
 | ADR-004 | استخدام Transactional Outbox Pattern | Accepted |
-| ADR-005 | استخدام RabbitMQ Quorum Queues | Accepted |
+| ADR-005 | استخدام RabbitMQ Quorum Queues | Proposed / Not Implemented |
 
 ## قواعد السجل
 

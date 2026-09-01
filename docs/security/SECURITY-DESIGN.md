@@ -1,283 +1,65 @@
-# التصميم الأمني لنظام HLRMS
-## Security Design
+# التصميم الأمني
 
-# 1. الهدف
+## الهوية
 
-تحدد هذه الوثيقة الضوابط الأمنية الأساسية لنظام HLRMS، بهدف حماية واجهات API وبيانات الطلبات والحسابات والبنية التحتية والسجلات والأسرار.
+- يسجل Auth Service المستخدم ويخزن Password Hash باستخدام BCrypt.
+- يصدر Access Token قصير العمر وRefresh Token.
+- يتحقق API Gateway من توقيع JWT وانتهائه وClaims المطلوبة.
+- يحذف Gateway أي `X-User-Id`, `X-User-Email`, `X-User-Roles` قادمة من Client ثم يعيد توليدها.
 
-# 2. النطاق
-
-يشمل التصميم:
-
-- Android Application
-- API Gateway
-- Authentication and Authorization
-- Request Service
-- Worker Services
-- RabbitMQ
-- PostgreSQL
-- Redis
-- Monitoring Stack
-- Docker Deployment
-
-# 3. المبادئ الأمنية
-
-## 3.1 أقل صلاحية
-
-يمنح كل مستخدم أو خدمة أقل قدر ممكن من الصلاحيات اللازمة.
-
-## 3.2 الرفض الافتراضي
-
-أي Endpoint أو وظيفة غير مصرح بها صراحة تعتبر مرفوضة.
-
-## 3.3 الدفاع متعدد الطبقات
-
-يستخدم النظام المصادقة والتفويض والتحقق من المدخلات وRate Limiting والعزل الشبكي والمراقبة وسجلات التدقيق وحماية الأسرار.
-
-## 3.4 عدم الثقة بالمدخلات
-
-يجب التحقق من جميع المدخلات القادمة من Android والأنظمة العميلة وHeaders وQuery Parameters ورسائل RabbitMQ وتحديثات الإعدادات.
-
-# 4. المصادقة
-
-## 4.1 Bearer JWT
-
-```http
-Authorization: Bearer <access-token>
-```
-
-## 4.2 Claims المقترحة
-
-```json
-{
-  "sub": "user-or-client-id",
-  "iss": "hlrms-auth-service",
-  "aud": "hlrms-api",
-  "roles": ["CLIENT"],
-  "clientSystemId": "5af67110-4b19-4f4b-89cc-94f6d32f9d2c",
-  "jti": "c63b81ee-cf11-4c62-9076-7343698cb684",
-  "iat": 1784791200,
-  "exp": 1784792100
-}
-```
-
-## 4.3 قواعد JWT
-
-- مدة Access Token قصيرة.
-- التحقق من `iss` و`aud` و`exp`.
-- رفض الخوارزمية غير المتوقعة.
-- عدم قبول `alg=none`.
-- دعم تدوير مفاتيح التوقيع.
-- عدم تسجيل الرمز كاملًا في Logs.
-
-# 5. التفويض
-
-الأدوار الأساسية:
+## حدود الثقة
 
 ```text
-CLIENT
-ADMIN
-MONITORING
+Untrusted Client
+  → API Gateway LB
+  → API Gateway (JWT trust boundary)
+  → Internal Services (trusted headers)
+  → PostgreSQL / Redis / RabbitMQ
 ```
 
-لا يكفي التحقق من الدور فقط؛ يجب أيضًا التحقق من ملكية المورد:
+Request Service يعتمد على Trusted Headers ولا يعيد التحقق من JWT. لذلك يجب ألا يكون منفذه الداخلي متاحًا لعميل غير موثوق.
 
-```text
-request.clientSystemId == token.clientSystemId
-```
+## التفويض
 
-واجهات `/api/v1/admin/**` مقيدة بدور `ADMIN`.
+- User endpoints تقيد القراءة بـ`user_id` المستخرج من Gateway.
+- Admin endpoints تستدعي `requireAdmin()`.
+- عدم ملكية Request يعاد كـ404 بدل كشف وجوده.
+- Demo Business API منفصل ويطبق JWT/secret بحسب المسار.
 
-# 6. حماية API
+## حماية التكرار
 
-## TLS
+Idempotency-Key لا يعد سرًا، لكنه يمنع إعادة تنفيذ العملية المنطقية عند Retry. يضم المفتاح الفعلي User ID، وتحسم Unique Constraint في PostgreSQL السباقات بين Replicas. Redis مسار سريع وليس مصدر الاتساق الوحيد.
 
-في الإنتاج يستخدم HTTPS فقط، ولا تقبل الاتصالات غير المشفرة للواجهات العامة.
+## إدارة الأسرار
 
-## Rate Limiting
+يجب تمرير القيم الآتية عبر `.env` أو Secret Store:
 
-يطبق حسب Client System وUser ID وEndpoint. عند التجاوز:
+- `JWT_SECRET`
+- PostgreSQL credentials
+- Redis password
+- RabbitMQ credentials
+- Grafana admin password
+- Demo internal secret
 
-```http
-429 Too Many Requests
-Retry-After: 30
-```
+القيم الافتراضية في compose للتطوير فقط ويجب تغييرها قبل أي نشر مشترك.
 
-## Idempotency
+## Rate Limiting وResilience
 
-`POST /api/v1/requests` يحتاج `Idempotency-Key`. يربط المفتاح بـClient System وRequest Hash وRequest ID وExpiration Time.
+- يطبق Gateway Rate Limiter على GET requests وAdmin routes وفق User ID.
+- POST الأساسي لا يحمل Rate Limiter في الإعداد الحالي حتى يسمح بBenchmark القبول؛ يلزم Policy مناسبة قبل Production.
+- Circuit Breaker وRetry مطبقان على مسارات القراءة وبعض مسارات الاختبار.
 
-## Correlation ID
+## نقاط تحتاج تقييدًا
 
-يقبل النظام `X-Correlation-ID` بعد التحقق من الطول والمحارف، أو ينشئ قيمة جديدة.
+1. `request-service-lb` منشور على `:18080` للتشخيص. الوصول الخارجي إليه قد يسمح بتزوير Trusted Headers؛ يجب ربطه بـlocalhost أو Firewall في أي بيئة غير محلية.
+2. `/api/v1/perf/**` مصنف Public في Gateway ومخصص للاختبار فقط. يجب تعطيله أو حمايته في Production.
+3. Actuator details ظاهرة في إعداد التطوير؛ يفضل فصل Management Network وتقييد التفاصيل.
+4. اتصال الخدمات داخل Docker غير مشفر. عند الانتقال إلى Hosts متعددة يلزم TLS أو شبكة خاصة موثوقة.
+5. CORS الافتراضي يسمح `http://localhost:3000` فقط؛ يجب تحديد Origin حقيقي بدقة.
 
-# 7. التحقق من المدخلات
+## Logging
 
-- استخدام DTOs محددة.
-- تحديد أقصى طول لكل String.
-- تحديد أقصى حجم وعمق وعدد مفاتيح للـPayload.
-- تحديد قيم Enum المسموحة.
-- تطبيق Validation خاص حسب `requestType`.
-- استخدام ORM أو Prepared Statements.
-- منع تمرير مدخلات المستخدم مباشرة إلى SQL أو أوامر النظام.
-- عدم استخدام مدخلات المستخدم كأسماء Exchanges أو Queues.
-
-# 8. أمان RabbitMQ
-
-الحسابات المقترحة:
-
-```text
-hlrms-producer
-hlrms-worker
-hlrms-monitoring
-hlrms-admin
-```
-
-الصلاحيات:
-
-- Producer يكتب فقط على Exchanges المطلوبة.
-- Worker يقرأ من Main Queues ويكتب على Retry وDLX.
-- Monitoring يقرأ المقاييس فقط.
-- Admin مقيد للاستخدام التشغيلي.
-
-ضوابط إضافية:
-
-- Virtual Host باسم `/hlrms`.
-- عدم استخدام المستخدم الافتراضي في الإنتاج.
-- عدم كشف Management UI للعامة.
-- عدم وضع Tokens أو أسرار داخل الرسائل.
-- التحقق من Message Schema.
-- تقييد حجم الرسالة.
-
-# 9. أمان PostgreSQL وRedis
-
-## PostgreSQL
-
-- حساب تطبيق محدود.
-- حساب Migrations منفصل إن أمكن.
-- عدم استخدام Superuser.
-- تشفير النسخ الاحتياطية.
-- تقييد الوصول بالشبكة.
-- عدم تسجيل SQL الحساس.
-
-## Redis
-
-- عدم كشفه للعامة.
-- تفعيل Authentication وACLs.
-- استخدام TTL.
-- عدم اعتباره مصدر الحقيقة النهائي.
-- عدم تخزين Tokens خام دون حاجة.
-
-# 10. إدارة الأسرار
-
-تشمل الأسرار كلمات مرور قواعد البيانات وRabbitMQ ومفاتيح JWT وAPI Keys وكلمات مرور Grafana وSMTP.
-
-القواعد:
-
-- لا تحفظ في Git.
-- لا توضع داخل Docker Image.
-- تمرر عبر Environment Variables أو Secret Manager.
-- تدوّر دوريًا.
-- تستخدم قيم مختلفة لكل بيئة.
-
-# 11. السجلات
-
-يسجل النظام:
-
-- Correlation ID
-- Request ID
-- Client ID
-- Endpoint
-- HTTP Status
-- Duration
-- Error Code
-- Worker ID
-- Attempt Number
-
-ولا يسجل:
-
-- Access Tokens
-- Refresh Tokens
-- Passwords
-- Authorization Header
-- Connection Strings
-- Secret Keys
-- Payload كاملًا إذا كان حساسًا
-
-# 12. Audit Logging
-
-تسجل العمليات الحساسة، مثل:
-
-- تسجيل الدخول الإداري.
-- تعديل Configuration.
-- إعادة معالجة DLQ.
-- تعديل Retry Policy.
-- تغيير الصلاحيات.
-- تدوير الأسرار.
-
-الحقول المقترحة:
-
-```text
-actorId
-actorType
-action
-resourceType
-resourceId
-oldValue
-newValue
-timestamp
-correlationId
-sourceIp
-result
-```
-
-# 13. Android Security
-
-- حفظ Access Token باستخدام Android Keystore أو تخزين آمن.
-- عدم تضمين أسرار ثابتة داخل APK.
-- تعطيل Cleartext Traffic.
-- عدم تسجيل Tokens في Logcat.
-- التعامل مع انتهاء الجلسة.
-- استخدام Network Security Configuration.
-
-# 14. Actuator وMonitoring
-
-لا تكشف `/actuator/prometheus` للعامة. يفضل الوصول إليه من شبكة داخلية أو عبر Reverse Proxy أو mTLS. كما يجب عدم كشف Endpoints حساسة مثل `env` و`beans` و`mappings` للعامة.
-
-# 15. الأخطاء الآمنة
-
-يجب إعادة رسالة آمنة دون Stack Trace أو SQL أو Hostnames داخلية:
-
-```json
-{
-  "code": "INTERNAL_ERROR",
-  "message": "حدث خطأ غير متوقع.",
-  "correlationId": "..."
-}
-```
-
-# 16. منع إساءة الاستخدام
-
-- حدود حجم الطلب.
-- Timeouts.
-- Queue Limits.
-- Consumer Prefetch.
-- Circuit Breaker.
-- Rate Limiting.
-- مراقبة Queue Backlog.
-- منع Retry غير المحدود.
-
-# 17. الاستجابة للحوادث
-
-1. اكتشاف الحادث.
-2. تحديد النطاق.
-3. احتواء الضرر.
-4. تدوير الأسرار.
-5. حفظ الأدلة.
-6. إصلاح السبب.
-7. استعادة الخدمة.
-8. توثيق الدروس المستفادة.
-
-# 18. تعريف الانتهاء الأمني
-
-لا تعد الميزة مكتملة قبل تطبيق Authentication وAuthorization وValidation وError Handling الآمن، ووجود اختبارات للصلاحيات، وعدم وجود أسرار في المستودع، وتحديث OpenAPI وThreat Model.
+- يمر Correlation ID عبر Gateway لتتبع الطلب.
+- لا تسجل كلمات المرور أو Tokens أو Payload حساس.
+- يخفي Android logging ترويسة Authorization.
+- يجب تجنب DEBUG تحت الحمل لأنه يرفع I/O ويشوّه Benchmark.

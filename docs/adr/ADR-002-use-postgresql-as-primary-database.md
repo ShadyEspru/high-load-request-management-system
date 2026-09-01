@@ -1,101 +1,25 @@
 # ADR-002: استخدام PostgreSQL كقاعدة البيانات الأساسية
 
-- **Status:** Accepted
-- **Date:** 2026-07-23
-- **Decision Owners:** HLRMS Team
-- **Related Requirements:** Data Consistency, Durability, Auditability, Queryability
-- **Related ADRs:** ADR-003, ADR-004
+- **Status:** Accepted and Implemented
 
-## 1. السياق
+## القرار
 
-يحتاج النظام إلى تخزين دائم للطلبات، سجل الحالات، المحاولات، النتائج، Idempotency Records، Outbox Events، الإعدادات، وAudit Logs. هذه البيانات مترابطة وتحتاج Transactions وConstraints واستعلامات إدارية.
+تستخدم PostgreSQL 17 كمصدر الحالة المتينة. يدير Flyway المخططات.
 
-## 2. محركات القرار
+## قواعد البيانات الأساسية
 
-- ACID.
-- العلاقات والتكامل المرجعي.
-- دعم `JSONB` للـPayload المرن.
-- الفهارس والاستعلامات المركبة.
-- تكامل Spring Data JPA وFlyway.
-- ملاءمة Transactional Outbox.
+- `hlrms_auth`: users، roles، user_roles، refresh_tokens.
+- `hlrms_requests`: requests، outbox_events، processed_events.
+- قاعدة Demo مستقلة عن قلب HLRMS.
 
-## 3. البدائل المدروسة
+## ضمانات التنفيذ
 
-### PostgreSQL
+- Transaction واحدة لإنشاء Request وOutbox Event.
+- Unique `(user_id, idempotency_key)` لحسم الطلبات المتزامنة.
+- Primary Key على event_id لمنع تكرار الاستهلاك.
+- Optimistic version في requests.
+- Indexes على status وcreated_at وrequest_type وuser ownership وOutbox pending scans.
 
-معاملات قوية، JSONB، فهارس، ونضج تشغيلي، لكنه يحتاج ضبطًا جيدًا وقد يصبح نقطة اختناق دون مراقبة.
+## النتائج
 
-### MySQL
-
-ناضج، لكنه لا يقدم للمشروع ميزة حاسمة مقارنة بـPostgreSQL.
-
-### MongoDB
-
-مرن للوثائق، لكن نموذج HLRMS علائقي ويحتاج اتساقًا وسجلًا تدقيقيًا واضحًا.
-
-### Redis كمخزن أساسي
-
-سريع، لكنه غير مناسب كمصدر الحقيقة الدائم أو للاستعلامات العلائقية.
-
-## 4. القرار
-
-سيستخدم HLRMS **PostgreSQL** كمصدر الحقيقة الأساسي. تحفظ الحقول الجوهرية في أعمدة صريحة، ويمكن حفظ `payload` و`metadata` و`result.data` في `JSONB`.
-
-## 5. المبررات
-
-يدعم النموذج العلائقي دورة حياة الطلب والمعاملات والقيود، ويتلاءم مباشرة مع Transactional Outbox.
-
-## 6. النتائج الإيجابية
-
-- مصدر حقيقة واحد.
-- اتساق قوي.
-- Unique Constraints للـIdempotency.
-- استعلامات إدارية وتدقيق.
-- دعم Outbox Pattern.
-
-## 7. النتائج السلبية والمخاطر
-
-- نمو الجداول بسرعة.
-- ضغط كتابة مرتفع.
-- الحاجة إلى فهارس وRetention.
-- احتمال بطء الاستعلامات الواسعة.
-
-## 8. إجراءات التخفيف
-
-- Pagination وفهارس مبنية على الاستعلامات الفعلية.
-- مراقبة Slow Queries وConnection Pool.
-- Migrations إلزامية.
-- أرشفة البيانات القديمة.
-- Read Replicas مستقبلًا عند الحاجة.
-
-## 9. تفاصيل التنفيذ
-
-```text
-requests
-request_status_history
-processing_attempts
-processing_results
-idempotency_records
-outbox_events
-system_configurations
-audit_logs
-```
-
-قيود وفهارس مهمة:
-
-- Unique على `(client_system_id, idempotency_key)`.
-- Indexes على `status`, `priority`, `created_at`, `client_system_id`, `next_retry_at`.
-- Optimistic Locking عند الحاجة.
-- Flyway لجميع تغييرات Schema.
-
-## 10. معايير القبول
-
-- [ ] الطلب وOutbox Event داخل Transaction واحدة.
-- [ ] Unique Constraint يمنع تكرار المفتاح.
-- [ ] الاستعلامات تدعم Pagination.
-- [ ] جميع تغييرات Schema عبر Migrations.
-- [ ] توجد اختبارات Rollback.
-
-## 11. شروط إعادة المراجعة
-
-عند الحاجة إلى توزيع جغرافي متعدد الكتابة، أو تغير نموذج البيانات جذريًا، أو تجاوز القدرة التشغيلية للتصميم الحالي.
+تعطي PostgreSQL اتساقًا ومعاملات وعلاقات وفهارس مناسبة للمشروع. عند التوسع الكبير تصبح Connection Pool وI/O وReplication وPartitioning مواضيع Capacity Planning مستقلة.

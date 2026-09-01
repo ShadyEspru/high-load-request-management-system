@@ -1,123 +1,30 @@
-# نموذج التهديدات لنظام HLRMS
-## Threat Model
+# Threat Model
 
-# 1. المنهج
-
-يستخدم النموذج تصنيف `STRIDE`:
-
-- Spoofing
-- Tampering
-- Repudiation
-- Information Disclosure
-- Denial of Service
-- Elevation of Privilege
-
-# 2. الأصول الحساسة
-
-| الأصل | الأهمية |
-|---|---|
-| Access Tokens | حرجة |
-| JWT Signing Keys | حرجة |
-| بيانات الطلبات | عالية |
-| نتائج المعالجة | عالية |
-| RabbitMQ Credentials | حرجة |
-| Database Credentials | حرجة |
-| Configuration Values | عالية |
-| Audit Logs | عالية |
-| Monitoring Data | متوسطة إلى عالية |
-
-# 3. حدود الثقة
-
-1. بين Android والـAPI Gateway.
-2. بين API Gateway والخدمات الداخلية.
-3. بين الخدمات وRabbitMQ.
-4. بين الخدمات وPostgreSQL.
-5. بين الخدمات وRedis.
-6. بين Prometheus والمكونات.
-7. بين المسؤول وواجهات الإدارة.
-
-# 4. التهديدات الرئيسية
-
-## T-01 سرقة Token
-
-**الفئة:** Spoofing  
-**التخفيف:** Access Token قصير، TLS، التحقق من Issuer وAudience، تدوير المفاتيح، وإلغاء الجلسات المشبوهة.
-
-## T-02 الوصول إلى طلب عميل آخر
-
-**الفئة:** Elevation of Privilege / Information Disclosure  
-**التخفيف:** فحص `clientSystemId` واختبارات Authorization وعدم الاعتماد على Request ID وحده.
-
-## T-03 تعديل Payload أثناء النقل
-
-**الفئة:** Tampering  
-**التخفيف:** HTTPS، Validation، Hash للـIdempotency، وتوقيع JWT.
-
-## T-04 إعادة إرسال الطلب
-
-**الفئة:** Tampering / Denial of Service  
-**التخفيف:** `Idempotency-Key` وRate Limiting وكشف التكرار.
-
-## T-05 SQL Injection
-
-**الفئة:** Tampering / Information Disclosure  
-**التخفيف:** ORM وPrepared Statements وحساب قاعدة بيانات محدود.
-
-## T-06 رسالة RabbitMQ مزورة أو تالفة
-
-**الفئة:** Spoofing / Tampering  
-**التخفيف:** صلاحيات منفصلة وSchema Validation وVirtual Host ورفض الرسائل غير الصالحة إلى DLQ.
-
-## T-07 Retry Loop غير محدود
-
-**الفئة:** Denial of Service  
-**التخفيف:** Maximum Attempts وBackoff وDLQ وتنبيهات Retry.
-
-## T-08 إغراق الطوابير
-
-**الفئة:** Denial of Service  
-**التخفيف:** Rate Limiting وQueue Limits وBackpressure ومراقبة Queue Depth.
-
-## T-09 تسرب الأسرار
-
-**الفئة:** Information Disclosure  
-**التخفيف:** Secret Manager وSecret Scanning وLog Redaction وتدوير الأسرار.
-
-## T-10 إساءة استخدام الإدارة
-
-**الفئة:** Elevation of Privilege / Repudiation  
-**التخفيف:** ADMIN Role وAudit Logs وشبكة داخلية وSession Timeout.
-
-## T-11 كشف Actuator
-
-**الفئة:** Information Disclosure  
-**التخفيف:** تقييد الشبكة، حماية Prometheus، وعدم كشف Endpoints الحساسة.
-
-## T-12 التلاعب بالسجلات
-
-**الفئة:** Repudiation / Tampering  
-**التخفيف:** Centralized Logging وصلاحيات كتابة محدودة وRetention Policy وCorrelation ID.
-
-# 5. جدول المخاطر
-
-| التهديد | الاحتمال | التأثير | المستوى |
+| التهديد | الخطر | التحكم الحالي | الإجراء المطلوب |
 |---|---|---|---|
-| سرقة Token | متوسط | عالٍ | عالٍ |
-| تجاوز صلاحية المورد | متوسط | عالٍ | عالٍ |
-| إغراق Queue | عالٍ | عالٍ | حرج |
-| تسرب الأسرار | متوسط | حرج | حرج |
-| Retry Loop | متوسط | عالٍ | عالٍ |
-| SQL Injection | منخفض مع ORM | حرج | عالٍ |
-| كشف Metrics | متوسط | متوسط | متوسط |
+| JWT مزور أو منتهي | انتحال هوية | توقيع JWT والتحقق في Gateway | تدوير Secret واستخدام Key management |
+| تزوير X-User headers | تجاوز الملكية/RBAC | Gateway يحذفها ويولدها | منع الوصول المباشر إلى Request Service |
+| إعادة POST بسبب Network retry | تنفيذ مكرر | User-scoped Idempotency + DB constraint | إلزام Client بسياسة مفتاح صحيحة |
+| Message redelivery | أثر مكرر | processed_events unique eventId | إبقاء Domain adapters Idempotent أيضًا |
+| Payload ضخم | استنزاف ذاكرة/DB | حد 10000 محرف | إضافة Body limit عند Edge إذا تغير العقد |
+| Credential stuffing | ضغط على Login | Password hashing ومقاييس Auth | Rate limit خاص بـAuth وLockout policy |
+| Queue flooding | تراكم وارتفاع Latency | Durable queue ومراقبة | Admission control وCapacity alerts |
+| كشف Actuator | تسريب تفاصيل | شبكة محلية حاليًا | Authentication/management network |
+| أسرار افتراضية | سيطرة كاملة على الخدمات | Environment variables متاحة | منع التشغيل بقيم Default في Production |
+| Public perf routes | تجاوز JWT/سياسات طبيعية | مخصصة للاختبار | Profile منفصل وتعطيلها افتراضيًا |
+| ngrok exposure | تعرض Endpoint عام | HTTPS domain | تشغيله وقت العرض فقط وسياسة وصول واضحة |
 
-# 6. اختبارات أمنية مطلوبة
+## الأصول الحساسة
 
-- Endpoint دون Token.
-- Token منتهي أو بتوقيع غير صحيح.
-- Token بدور غير كافٍ.
-- Client يطلب موردًا لعميل آخر.
-- تكرار Idempotency Key مع Payload مختلف.
-- Payload أكبر من الحد.
-- Rate Limit.
-- رسالة RabbitMQ غير مطابقة للـSchema.
-- تجاوز Maximum Retry Attempts.
+- Password hashes وRefresh Tokens.
+- JWT signing secret.
+- بيانات requests وpayload/result.
+- RabbitMQ وRedis وPostgreSQL credentials.
+- Grafana dashboard وOperational metrics.
+
+## افتراضات النسخة الحالية
+
+- Docker network داخل Host موثوقة.
+- Port 18080 للاستخدام المحلي فقط.
+- Demo integration لا يحمل بيانات حقيقية.
+- Benchmark ينفذ في شبكة LAN موثوقة.
