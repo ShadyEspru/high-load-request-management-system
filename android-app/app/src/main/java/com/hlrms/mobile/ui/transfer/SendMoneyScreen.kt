@@ -226,11 +226,6 @@ fun SendMoneyScreen(
                                 }
                                 .take(16)
 
-                        if (
-                            uiState.recipient != null
-                        ) {
-                            onClearRecipient()
-                        }
                     },
 
                     isSearching =

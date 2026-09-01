@@ -12,9 +12,6 @@ object ApiClient {
     private const val BASE_URL =
         "https://uncorrupt-swifter-spruce.ngrok-free.dev/"
 
-    private lateinit var applicationContext:
-            Context
-
     private lateinit var sessionManager:
             SessionManager
 
@@ -22,16 +19,13 @@ object ApiClient {
         context: Context
     ) {
 
-        if (::applicationContext.isInitialized) {
+        if (::sessionManager.isInitialized) {
             return
         }
 
-        applicationContext =
-            context.applicationContext
-
         sessionManager =
             SessionManager(
-                applicationContext
+                context.applicationContext
             )
     }
 
@@ -137,7 +131,7 @@ object ApiClient {
     private fun checkInitialized() {
 
         check(
-            ::applicationContext.isInitialized
+            ::sessionManager.isInitialized
         ) {
             "ApiClient.initialize(context) must be called first"
         }

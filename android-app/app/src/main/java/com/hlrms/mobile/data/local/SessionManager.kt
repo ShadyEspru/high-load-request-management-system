@@ -1,6 +1,7 @@
 package com.hlrms.mobile.data.local
 
 import android.content.Context
+import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
@@ -16,8 +17,11 @@ private val Context.dataStore by preferencesDataStore(
 )
 
 class SessionManager(
-    private val context: Context
+    context: Context
 ) {
+
+    private val dataStore: DataStore<Preferences> =
+        context.applicationContext.dataStore
 
     companion object {
 
@@ -33,7 +37,7 @@ class SessionManager(
         refreshToken: String
     ) {
 
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
 
             preferences[ACCESS_TOKEN] =
                 accessToken
@@ -47,7 +51,7 @@ class SessionManager(
         accessToken: String,
         refreshToken: String
     ) {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
 
             preferences[ACCESS_TOKEN] =
                 accessToken
@@ -59,7 +63,7 @@ class SessionManager(
 
     val accessToken: Flow<String?> =
 
-        context.dataStore.data
+        dataStore.data
 
             .catch {
 
@@ -80,7 +84,7 @@ class SessionManager(
 
     val refreshToken: Flow<String?> =
 
-        context.dataStore.data
+        dataStore.data
 
             .catch {
 
@@ -101,7 +105,7 @@ class SessionManager(
 
     suspend fun clearSession() {
 
-        context.dataStore.edit {
+        dataStore.edit {
 
             it.clear()
         }
