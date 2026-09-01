@@ -2,23 +2,77 @@ openapi: 3.1.0
 info:
   title: HLRMS API
   version: 1.0.0
-  description: واجهات نظام إدارة الطلبات عالية الحمل HLRMS.
+  description: العقد العام المنفذ لنظام High-Load Request Management System.
 servers:
-  - url: http://localhost:8080
-    description: Local development
+  - url: http://localhost:8088
+    description: API Gateway Load Balancer
 tags:
+  - name: Authentication
   - name: Requests
   - name: Administration
-  - name: Operations
-security:
-  - bearerAuth: []
 
 paths:
+  /api/v1/auth/register:
+    post:
+      tags: [Authentication]
+      summary: تسجيل مستخدم جديد
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RegisterRequest'}
+      responses:
+        '201':
+          description: تم إنشاء المستخدم
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RegisterResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /api/v1/auth/login:
+    post:
+      tags: [Authentication]
+      summary: تسجيل الدخول
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LoginRequest'}
+      responses:
+        '200':
+          description: رموز الوصول والتجديد
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AuthResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+
+  /api/v1/auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: تجديد Access Token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RefreshTokenRequest'}
+      responses:
+        '200':
+          description: رموز محدثة
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AuthResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+
   /api/v1/requests:
     post:
       tags: [Requests]
-      summary: إرسال طلب جديد
-      operationId: submitRequest
+      summary: قبول طلب جديد أوإعادة نتيجة Idempotency
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CorrelationId'
@@ -26,229 +80,88 @@ paths:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/SubmitRequest'
+            schema: {$ref: '#/components/schemas/CreateRequest'}
       responses:
-        '202':
-          description: تم قبول الطلب
+        '201':
+          description: طلب جديد
+          headers:
+            Location: {schema: {type: string, format: uri-reference}}
+            Idempotency-Replayed: {schema: {type: boolean, example: false}}
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/RequestAccepted'
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '413':
-          description: Payload كبير
+              schema: {$ref: '#/components/schemas/RequestResponse'}
+        '200':
+          description: Replay للطلب نفسه
+          headers:
+            Idempotency-Replayed: {schema: {type: boolean, example: true}}
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ApiError' }
-        '429': { $ref: '#/components/responses/TooManyRequests' }
-        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+              schema: {$ref: '#/components/schemas/RequestResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '409': {$ref: '#/components/responses/Conflict'}
     get:
       tags: [Requests]
-      summary: البحث في طلبات النظام العميل
-      operationId: searchRequests
+      summary: عرض طلبات المستخدم الحالي
       parameters:
-        - $ref: '#/components/parameters/StatusFilter'
-        - $ref: '#/components/parameters/RequestTypeFilter'
-        - $ref: '#/components/parameters/PriorityFilter'
-        - $ref: '#/components/parameters/CreatedFrom'
-        - $ref: '#/components/parameters/CreatedTo'
+        - $ref: '#/components/parameters/Status'
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
-        - $ref: '#/components/parameters/Sort'
       responses:
         '200':
-          description: قائمة الطلبات
+          description: صفحة من طلبات المستخدم
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/PagedRequestSummary' }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
+              schema: {$ref: '#/components/schemas/PageResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
 
-  /api/v1/requests/{requestId}:
+  /api/v1/requests/{id}:
     get:
       tags: [Requests]
-      summary: عرض تفاصيل طلب
-      operationId: getRequestDetails
-      parameters:
-        - $ref: '#/components/parameters/RequestId'
-        - $ref: '#/components/parameters/CorrelationId'
-      responses:
-        '200':
-          description: تفاصيل الطلب
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/RequestDetails' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-
-  /api/v1/requests/{requestId}/status:
-    get:
-      tags: [Requests]
-      summary: الاستعلام عن حالة الطلب
-      operationId: getRequestStatus
+      summary: قراءة طلب يملكه المستخدم الحالي
       parameters:
         - $ref: '#/components/parameters/RequestId'
       responses:
         '200':
-          description: الحالة الحالية
+          description: بيانات الطلب
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/RequestStatusResponse' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-
-  /api/v1/requests/{requestId}/history:
-    get:
-      tags: [Requests]
-      summary: عرض سجل الحالات
-      operationId: getRequestHistory
-      parameters:
-        - $ref: '#/components/parameters/RequestId'
-      responses:
-        '200':
-          description: سجل الحالات
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/RequestHistoryResponse' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
+              schema: {$ref: '#/components/schemas/RequestResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {$ref: '#/components/responses/NotFound'}
 
   /api/v1/admin/requests:
     get:
       tags: [Administration]
-      summary: البحث الإداري في جميع الطلبات
-      operationId: adminSearchRequests
+      summary: عرض كل الطلبات للمسؤول
       parameters:
-        - $ref: '#/components/parameters/StatusFilter'
-        - $ref: '#/components/parameters/RequestTypeFilter'
-        - $ref: '#/components/parameters/PriorityFilter'
-        - name: clientSystemId
-          in: query
-          schema: { type: string, format: uuid }
-        - name: workerId
-          in: query
-          schema: { type: string, maxLength: 120 }
-        - name: failureType
-          in: query
-          schema: { type: string, maxLength: 80 }
+        - $ref: '#/components/parameters/Status'
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
-        - $ref: '#/components/parameters/Sort'
       responses:
         '200':
-          description: قائمة إدارية بالطلبات
+          description: صفحة من جميع الطلبات
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/PagedRequestSummary' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
+              schema: {$ref: '#/components/schemas/PageResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
 
-  /api/v1/admin/queues:
+  /api/v1/admin/requests/{id}:
     get:
       tags: [Administration]
-      summary: عرض حالة الطوابير
-      operationId: getQueueStatuses
-      responses:
-        '200':
-          description: حالة الطوابير
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/QueueStatusResponse' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '503': { $ref: '#/components/responses/ServiceUnavailable' }
-
-  /api/v1/admin/workers:
-    get:
-      tags: [Administration]
-      summary: عرض حالة Workers
-      operationId: getWorkerStatuses
-      responses:
-        '200':
-          description: حالة Workers
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/WorkerStatusResponse' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-
-  /api/v1/admin/configurations:
-    get:
-      tags: [Administration]
-      summary: عرض إعدادات النظام
-      operationId: getConfigurations
-      responses:
-        '200':
-          description: الإعدادات
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ConfigurationListResponse' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-
-  /api/v1/admin/configurations/{key}:
-    patch:
-      tags: [Administration]
-      summary: تعديل إعداد
-      operationId: updateConfiguration
+      summary: قراءة طلب محدد للمسؤول
       parameters:
-        - name: key
-          in: path
-          required: true
-          schema: { type: string, minLength: 1, maxLength: 150 }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/UpdateConfigurationRequest' }
+        - $ref: '#/components/parameters/RequestId'
       responses:
         '200':
-          description: تم التحديث
+          description: بيانات الطلب
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ConfigurationItem' }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
-
-  /actuator/health:
-    get:
-      tags: [Operations]
-      summary: Health Check
-      security: []
-      responses:
-        '200':
-          description: الحالة الصحية
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/HealthResponse' }
-        '503':
-          description: مكون أساسي غير متاح
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/HealthResponse' }
-
-  /actuator/prometheus:
-    get:
-      tags: [Operations]
-      summary: Prometheus Metrics
-      security: []
-      responses:
-        '200':
-          description: Prometheus exposition format
-          content:
-            text/plain:
-              schema: { type: string }
+              schema: {$ref: '#/components/schemas/RequestResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
 
 components:
   securitySchemes:
@@ -256,306 +169,145 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-
   parameters:
-    RequestId:
-      name: requestId
-      in: path
-      required: true
-      schema: { type: string, format: uuid }
-    CorrelationId:
-      name: X-Correlation-ID
-      in: header
-      schema: { type: string, maxLength: 100 }
     IdempotencyKey:
       name: Idempotency-Key
       in: header
       required: true
-      schema: { type: string, minLength: 1, maxLength: 120 }
-    StatusFilter:
+      schema: {type: string, minLength: 1, maxLength: 100}
+    CorrelationId:
+      name: X-Correlation-ID
+      in: header
+      required: false
+      schema: {type: string}
+    RequestId:
+      name: id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    Status:
       name: status
       in: query
-      explode: true
-      schema:
-        type: array
-        items: { $ref: '#/components/schemas/RequestStatus' }
-    RequestTypeFilter:
-      name: requestType
-      in: query
-      schema: { type: string, maxLength: 80 }
-    PriorityFilter:
-      name: priority
-      in: query
-      schema: { $ref: '#/components/schemas/RequestPriority' }
-    CreatedFrom:
-      name: createdFrom
-      in: query
-      schema: { type: string, format: date-time }
-    CreatedTo:
-      name: createdTo
-      in: query
-      schema: { type: string, format: date-time }
+      required: false
+      schema: {$ref: '#/components/schemas/RequestStatus'}
     Page:
       name: page
       in: query
-      schema: { type: integer, minimum: 0, default: 0 }
+      schema: {type: integer, minimum: 0, default: 0}
     Size:
       name: size
       in: query
-      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
-    Sort:
-      name: sort
-      in: query
-      schema: { type: string, default: 'createdAt,desc' }
-
+      schema: {type: integer, minimum: 1, maximum: 100, default: 20}
   responses:
     BadRequest:
-      description: طلب غير صحيح
+      description: الطلب غير صالح
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/ApiError' }
+          schema: {$ref: '#/components/schemas/ApiError'}
     Unauthorized:
-      description: المصادقة مطلوبة
+      description: المصادقة مفقودة أوغير صالحة
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/ApiError' }
+          schema: {$ref: '#/components/schemas/ApiError'}
     Forbidden:
-      description: لا توجد صلاحية
+      description: الدور غير مخول
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/ApiError' }
+          schema: {$ref: '#/components/schemas/ApiError'}
     NotFound:
       description: المورد غير موجود
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/ApiError' }
+          schema: {$ref: '#/components/schemas/ApiError'}
     Conflict:
-      description: تعارض
+      description: تعارض في البريد أوIdempotency
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/ApiError' }
-    TooManyRequests:
-      description: تجاوز Rate Limit
-      headers:
-        Retry-After:
-          schema: { type: integer, minimum: 1 }
-      content:
-        application/json:
-          schema: { $ref: '#/components/schemas/ApiError' }
-    ServiceUnavailable:
-      description: الخدمة غير متاحة
-      headers:
-        Retry-After:
-          schema: { type: integer, minimum: 1 }
-      content:
-        application/json:
-          schema: { $ref: '#/components/schemas/ApiError' }
-
+          schema: {$ref: '#/components/schemas/ApiError'}
   schemas:
-    RequestStatus:
-      type: string
-      enum: [RECEIVED, VALIDATING, ACCEPTED, REJECTED, QUEUED, PROCESSING, SUCCEEDED, FAILED, RETRY_SCHEDULED, DEAD_LETTERED, CANCELLED]
-    RequestPriority:
-      type: string
-      enum: [HIGH, NORMAL, LOW]
-      default: NORMAL
-    SubmitRequest:
+    RegisterRequest:
       type: object
-      additionalProperties: false
+      required: [email, password, firstName, lastName]
+      properties:
+        email: {type: string, format: email, maxLength: 320}
+        password: {type: string, minLength: 8, maxLength: 100}
+        firstName: {type: string, maxLength: 100}
+        lastName: {type: string, maxLength: 100}
+    RegisterResponse:
+      type: object
+      required: [id, email, firstName, lastName, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        email: {type: string, format: email}
+        firstName: {type: string}
+        lastName: {type: string}
+        createdAt: {type: string, format: date-time}
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: {type: string, format: email}
+        password: {type: string}
+    RefreshTokenRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken: {type: string}
+    AuthResponse:
+      type: object
+      required: [accessToken, refreshToken, tokenType]
+      properties:
+        accessToken: {type: string}
+        refreshToken: {type: string}
+        tokenType: {type: string, example: Bearer}
+    CreateRequest:
+      type: object
       required: [requestType, payload]
       properties:
-        requestType: { type: string, minLength: 1, maxLength: 80 }
-        priority: { $ref: '#/components/schemas/RequestPriority' }
-        payload: { type: object, additionalProperties: true }
-        metadata: { type: object, maxProperties: 50, additionalProperties: true }
-    RequestAccepted:
+        requestType: {type: string, minLength: 1, maxLength: 100}
+        payload: {type: string, minLength: 1, maxLength: 10000}
+    RequestStatus:
+      type: string
+      enum: [PENDING, PROCESSING, COMPLETED, FAILED]
+    RequestResponse:
       type: object
-      required: [requestId, status, requestType, priority, receivedAt, statusUrl]
+      required: [id, idempotencyKey, requestType, payload, status, createdAt, updatedAt, version]
       properties:
-        requestId: { type: string, format: uuid }
-        status: { $ref: '#/components/schemas/RequestStatus' }
-        requestType: { type: string }
-        priority: { $ref: '#/components/schemas/RequestPriority' }
-        receivedAt: { type: string, format: date-time }
-        statusUrl: { type: string }
-    RequestSummary:
+        id: {type: string, format: uuid}
+        idempotencyKey: {type: string}
+        requestType: {type: string}
+        payload: {type: string}
+        status: {$ref: '#/components/schemas/RequestStatus'}
+        result: {type: [string, 'null']}
+        errorMessage: {type: [string, 'null']}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+        completedAt: {type: [string, 'null'], format: date-time}
+        version: {type: integer, format: int64}
+    PageResponse:
       type: object
-      required: [requestId, requestType, priority, status, receivedAt]
+      required: [content, page, size, totalElements, totalPages, first, last, hasNext, hasPrevious]
       properties:
-        requestId: { type: string, format: uuid }
-        requestType: { type: string }
-        priority: { $ref: '#/components/schemas/RequestPriority' }
-        status: { $ref: '#/components/schemas/RequestStatus' }
-        receivedAt: { type: string, format: date-time }
-        updatedAt: { type: string, format: date-time }
-        completedAt: { type: [string, 'null'], format: date-time }
-        attemptCount: { type: integer, minimum: 0 }
-    RequestDetails:
-      allOf:
-        - { $ref: '#/components/schemas/RequestSummary' }
-        - type: object
-          properties:
-            payload: { type: object, additionalProperties: true }
-            metadata: { type: object, additionalProperties: true }
-            queuedAt: { type: [string, 'null'], format: date-time }
-            processingStartedAt: { type: [string, 'null'], format: date-time }
-            result:
-              anyOf:
-                - { $ref: '#/components/schemas/ProcessingResult' }
-                - { type: 'null' }
-            lastFailure:
-              anyOf:
-                - { $ref: '#/components/schemas/FailureDetails' }
-                - { type: 'null' }
-    RequestStatusResponse:
-      type: object
-      required: [requestId, status, updatedAt, terminal]
-      properties:
-        requestId: { type: string, format: uuid }
-        status: { $ref: '#/components/schemas/RequestStatus' }
-        attemptNumber: { type: integer, minimum: 0 }
-        updatedAt: { type: string, format: date-time }
-        terminal: { type: boolean }
-        nextRetryAt: { type: [string, 'null'], format: date-time }
-    StatusHistoryItem:
-      type: object
-      required: [toStatus, changedAt]
-      properties:
-        fromStatus:
-          anyOf:
-            - { $ref: '#/components/schemas/RequestStatus' }
-            - { type: 'null' }
-        toStatus: { $ref: '#/components/schemas/RequestStatus' }
-        reasonCode: { type: [string, 'null'] }
-        reasonMessage: { type: [string, 'null'] }
-        changedAt: { type: string, format: date-time }
-    RequestHistoryResponse:
-      type: object
-      required: [requestId, items]
-      properties:
-        requestId: { type: string, format: uuid }
-        items:
+        content:
           type: array
-          items: { $ref: '#/components/schemas/StatusHistoryItem' }
-    ProcessingResult:
-      type: object
-      properties:
-        outcome: { type: string, enum: [SUCCESS, FAILURE] }
-        data: { type: object, additionalProperties: true }
-        processingTimeMs: { type: integer, format: int64, minimum: 0 }
-    FailureDetails:
-      type: object
-      properties:
-        type: { type: string }
-        code: { type: string }
-        message: { type: string }
-        retryable: { type: boolean }
-        attemptNumber: { type: integer, minimum: 1 }
-    PageMetadata:
-      type: object
-      required: [number, size, totalElements, totalPages, first, last]
-      properties:
-        number: { type: integer, minimum: 0 }
-        size: { type: integer, minimum: 1 }
-        totalElements: { type: integer, format: int64, minimum: 0 }
-        totalPages: { type: integer, minimum: 0 }
-        first: { type: boolean }
-        last: { type: boolean }
-    PagedRequestSummary:
-      type: object
-      required: [items, page]
-      properties:
-        items:
-          type: array
-          items: { $ref: '#/components/schemas/RequestSummary' }
-        page: { $ref: '#/components/schemas/PageMetadata' }
-    QueueStatusResponse:
-      type: object
-      required: [items, collectedAt]
-      properties:
-        items:
-          type: array
-          items:
-            type: object
-            required: [name, messagesReady, messagesUnacknowledged, consumerCount, status]
-            properties:
-              name: { type: string }
-              messagesReady: { type: integer, format: int64, minimum: 0 }
-              messagesUnacknowledged: { type: integer, format: int64, minimum: 0 }
-              consumerCount: { type: integer, minimum: 0 }
-              publishRate: { type: number, minimum: 0 }
-              deliveryRate: { type: number, minimum: 0 }
-              status: { type: string, enum: [HEALTHY, DEGRADED, UNAVAILABLE] }
-        collectedAt: { type: string, format: date-time }
-    WorkerStatusResponse:
-      type: object
-      required: [items]
-      properties:
-        items:
-          type: array
-          items:
-            type: object
-            required: [workerId, serviceName, status, lastHeartbeatAt]
-            properties:
-              workerId: { type: string }
-              serviceName: { type: string }
-              status: { type: string, enum: [ACTIVE, IDLE, UNHEALTHY, OFFLINE] }
-              lastHeartbeatAt: { type: string, format: date-time }
-              activeRequestCount: { type: integer, minimum: 0 }
-              processedRequestCount: { type: integer, format: int64, minimum: 0 }
-              failedRequestCount: { type: integer, format: int64, minimum: 0 }
-              averageProcessingTimeMs: { type: number, minimum: 0 }
-    ConfigurationItem:
-      type: object
-      required: [key, value, valueType, dynamic, updatedAt]
-      properties:
-        key: { type: string }
-        value: {}
-        valueType: { type: string, enum: [STRING, INTEGER, DECIMAL, BOOLEAN, JSON] }
-        description: { type: string }
-        dynamic: { type: boolean }
-        restartRequired: { type: boolean }
-        updatedAt: { type: string, format: date-time }
-        updatedBy: { type: string }
-    ConfigurationListResponse:
-      type: object
-      required: [items]
-      properties:
-        items:
-          type: array
-          items: { $ref: '#/components/schemas/ConfigurationItem' }
-    UpdateConfigurationRequest:
-      type: object
-      additionalProperties: false
-      required: [value, reason]
-      properties:
-        value: {}
-        reason: { type: string, minLength: 3, maxLength: 500 }
-    HealthResponse:
-      type: object
-      required: [status]
-      properties:
-        status: { type: string, enum: [UP, DEGRADED, DOWN, UNKNOWN] }
-        components: { type: object, additionalProperties: true }
-    FieldError:
-      type: object
-      required: [field, code, message]
-      properties:
-        field: { type: string }
-        code: { type: string }
-        message: { type: string }
+          items: {$ref: '#/components/schemas/RequestResponse'}
+        page: {type: integer}
+        size: {type: integer}
+        totalElements: {type: integer, format: int64}
+        totalPages: {type: integer}
+        first: {type: boolean}
+        last: {type: boolean}
+        hasNext: {type: boolean}
+        hasPrevious: {type: boolean}
     ApiError:
       type: object
-      required: [timestamp, status, error, code, message, path, correlationId]
       properties:
-        timestamp: { type: string, format: date-time }
-        status: { type: integer }
-        error: { type: string }
-        code: { type: string }
-        message: { type: string }
-        path: { type: string }
-        correlationId: { type: string }
-        details: { type: object, additionalProperties: true }
-        fieldErrors:
-          type: array
-          items: { $ref: '#/components/schemas/FieldError' }
+        timestamp: {type: string, format: date-time}
+        status: {type: integer}
+        error: {type: string}
+        message: {type: string}
+        path: {type: string}
+        details: {}
+
+security:
+  - bearerAuth: []

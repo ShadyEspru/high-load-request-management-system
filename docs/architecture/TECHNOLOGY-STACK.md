@@ -1,52 +1,30 @@
-# تثبيت التقنيات المعتمدة
+# التقنيات المعتمدة
 
-## Backend
-- Java 21
-- Spring Boot 3.x
-- Spring Web
-- Spring AMQP
-- Spring Data JPA
-- Spring Validation
-- Spring Security لاحقًا عند الحاجة
-- Maven
+| المجال | التقنية | الاستخدام الفعلي |
+|---|---|---|
+| Backend | Java 21، Spring Boot 3.x، Maven | خدمات Gateway وAuth وRequest وWorker وDemo API |
+| Edge | Spring Cloud Gateway، HAProxy 3.4 | التوجيه والسياسات وتوزيع الحمل |
+| Security | Spring Security، JJWT، BCrypt | JWT وRBAC وتخزين كلمات المرور |
+| Data | PostgreSQL 17، Spring Data JPA، Flyway | الحالة المتينة ومخططات قواعد البيانات |
+| Fast State | Redis 8 | Idempotency وLocks وCache وRate Limiting |
+| Messaging | RabbitMQ 4، Spring AMQP | Direct Exchange وDurable Queue وPublisher Confirms وDLQ |
+| Resilience | Resilience4j | Circuit Breaker وRetry وBulkhead/TimeLimiter حيث تم إعداده |
+| Observability | Actuator، Micrometer، Prometheus 3.5، Grafana | Health وMetrics وDashboard |
+| Infrastructure | Docker، Docker Compose | تشغيل البيئة المحلية واختبارات التوسع |
+| Load Testing | k6 | Arrival-rate وVU-based scenarios |
+| Demo Client | Kotlin، Jetpack Compose، Retrofit | إثبات التكامل الوظيفي القابل للاستبدال |
+| Diagrams | diagrams.net XML، Inkscape، Python generator | drawio وPDF وPNG من مصدر واحد |
 
-## Messaging
-- RabbitMQ 4.x
-- Direct وTopic Exchanges
-- Durable Queues
-- Manual Acknowledgement
-- Publisher Confirms
-- Retry Queues
-- Dead Letter Exchanges
+## قرارات تنفيذية
 
-## Data
-- PostgreSQL 17
-- Redis 8 لمنع التكرار والتخزين المؤقت القصير
-- Flyway لإدارة تغييرات قاعدة البيانات
+- Request Service وOutbox Publisher يعملان من Image واحدة مع فصل الدور عبر `OUTBOX_PUBLISHER_ENABLED`.
+- HAProxy الحالي يوزع Request traffic على نسختين محددتين.
+- Listener في كل Worker يستخدم Auto Acknowledgement مع Retry وMessage Recoverer؛ ليس Manual ACK.
+- الطوابير الحالية Durable Classic Queues. Quorum Queues ليست مفعلة في الإعداد المنفذ.
+- Demo Client وDemo Business API منفصلان عن HLRMS Core.
 
-## Monitoring
-- Prometheus
-- Grafana
-- RabbitMQ Management UI
-- Spring Boot Actuator
-- Micrometer
-- Loki اختياري للسجلات إذا سمح الوقت
+## أدوات غير معتمدة في النتيجة الحالية
 
-## Clients and Testing
-- Android: Kotlin + Jetpack Compose
-- API documentation: OpenAPI / Swagger
-- Load testing: k6
-- API testing: Postman أو Bruno
-
-## Deployment
-- Docker
-- Docker Compose
-- GitHub Actions للتكامل المستمر
-
-## Diagrams and Documentation
-- Draw.io
-- Markdown للمستندات داخل المستودع
-- التقرير النهائي باستخدام Word أو Google Docs
-
-## قرار معماري
-يبدأ التنفيذ بثلاث خدمات قابلة للتشغيل مستقلًا: API Gateway، Request Service، Worker Service. يمكن تشغيل عدة نسخ من Worker Service لإثبات توزيع الحمل، دون تحويل المشروع إلى عدد كبير من الخدمات المصغرة.
+- Loki غير موجود في Docker Compose الحالي.
+- GitHub Actions ليست جزءًا مثبتًا من مسار التشغيل الحالي.
+- Kubernetes وCloud deployment أهداف مستقبلية وليست ضمن Benchmark المنفذ.

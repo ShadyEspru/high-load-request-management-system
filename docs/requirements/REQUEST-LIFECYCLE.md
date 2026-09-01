@@ -1,37 +1,35 @@
-# Request Lifecycle
+# دورة حياة الطلب
 
-## Purpose
+الحالات المخزنة فعليًا في `RequestStatus` هي أربع فقط:
 
-Defines the official lifecycle of a request inside HLRMS.
-
-## States
-
-| State | Description | Final State |
+| الحالة | المعنى | نهائية |
 |---|---|---|
-| RECEIVED | The request was received and assigned an identifier. | No |
-| VALIDATING | The request is being validated. | No |
-| ACCEPTED | The request passed validation. | No |
-| REJECTED | The request failed validation. | Yes |
-| QUEUED | The request was published to the message queue. | No |
-| PROCESSING | A worker is currently processing the request. | No |
-| SUCCEEDED | The request completed successfully. | Yes |
-| FAILED | The current processing attempt failed. | No |
-| RETRY_SCHEDULED | A retry has been scheduled. | No |
-| DEAD_LETTERED | Retry attempts were exhausted and the request was moved to the DLQ. | Yes |
-| CANCELLED | The request was cancelled. | Yes |
+| `PENDING` | حُفظ الطلب وحدث Outbox في Transaction واحدة، وينتظر النشر أو الاستهلاك | لا |
+| `PROCESSING` | سجل Worker الحدث وبدأ تنفيذ الطلب | لا |
+| `COMPLETED` | حُفظت نتيجة التنفيذ بنجاح | نعم |
+| `FAILED` | حُفظ سبب فشل نهائي أو استنفدت محاولات المعالجة | نعم |
 
-## Normal Flow
+## المسار الطبيعي
 
-RECEIVED → VALIDATING → ACCEPTED → QUEUED → PROCESSING → SUCCEEDED
+```text
+PENDING → PROCESSING → COMPLETED
+```
 
-## Validation Failure
+## مسار الفشل
 
-RECEIVED → VALIDATING → REJECTED
+```text
+PENDING → PROCESSING → FAILED
+```
 
-## Retry Flow
+وقد ينتقل الطلب إلى `FAILED` عند استنفاد Retry حتى لو تعذر إكمال المعالجة المنطقية.
 
-PROCESSING → FAILED → RETRY_SCHEDULED → QUEUED → PROCESSING
+## ما ليس حالة طلب
 
-## Permanent Failure
+العناصر الآتية سلوك Messaging أو Outbox وليست قيمًا في جدول requests:
 
-PROCESSING → FAILED → DEAD_LETTERED
+- `PROCESSING` و`PUBLISHED`: حالتان في `outbox_events` وليستا حالتي Request.
+- Retry وRedelivery: سلوك Spring AMQP وRabbitMQ.
+- DLQ: موقع الرسالة بعد رفضها النهائي.
+- `RECEIVED`, `VALIDATING`, `ACCEPTED`, `QUEUED`, `SUCCEEDED`, `CANCELLED`: غير منفذة كحالات مخزنة.
+
+إبقاء الحالات الأربع فقط يمنع توثيق State Machine لا يطابق الكود.

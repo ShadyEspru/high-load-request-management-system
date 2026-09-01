@@ -1,257 +1,36 @@
-# المتطلبات الوظيفية  
-## Functional Requirements
-
-## 1. المقدمة
-
-تحدد هذه الوثيقة المتطلبات الوظيفية لنظام إدارة الطلبات عالية الحمل  
-**High-Load Request Management System (HLRMS)**.
-
-تصف هذه المتطلبات **ما يجب أن يفعله النظام** من الناحية الوظيفية، دون الدخول في تفاصيل التنفيذ أو التقنيات المستخدمة.
-
-يحمل كل متطلب معرفًا فريدًا بالشكل `FR-XXX` لتسهيل التتبع، والتنفيذ، والاختبار، والصيانة.
-
----
-
-# 2. المتطلبات الوظيفية
-
-## 2.1 إرسال الطلبات  
-### Request Submission
-
-### FR-001 – إرسال طلب جديد  
-#### Submit Request
-
-يجب أن يسمح النظام للأنظمة العميلة الخارجية بإرسال طلب جديد من خلال واجهة `REST API` العامة.
-
----
-
-### FR-002 – إنشاء معرف للطلب  
-#### Generate Request Identifier
-
-يجب أن ينشئ النظام معرف طلب فريدًا عالميًا `Request ID` لكل طلب يتم قبوله.
-
----
-
-### FR-003 – تخزين الطلب  
-#### Store Request
-
-يجب أن يخزن النظام الطلب المستلم قبل بدء معالجته.
-
----
-
-### FR-004 – التحقق من صحة الطلب  
-#### Validate Request
-
-يجب أن يتحقق النظام من صحة بيانات الطلب قبل قبوله للمعالجة.
-
----
-
-### FR-005 – رفض الطلب غير الصحيح  
-#### Reject Invalid Request
-
-يجب أن يرفض النظام الطلبات غير الصحيحة، وأن يعيد رسالة خطأ مناسبة توضح سبب فشل التحقق.
-
----
-
-## 2.2 دورة حياة الطلب  
-### Request Lifecycle
-
-### FR-006 – تعيين الحالة الابتدائية للطلب  
-#### Initialize Request Status
-
-يجب أن يعيّن النظام الحالة `RECEIVED` عند استلام الطلب لأول مرة.
-
----
-
-### FR-007 – تحديث حالة الطلب  
-#### Update Request Status
-
-يجب أن يحدّث النظام حالة الطلب عند انتقاله إلى مرحلة معالجة جديدة.
-
----
-
-### FR-008 – تسجيل سجل الحالات  
-#### Record Status History
-
-يجب أن يحتفظ النظام بسجل كامل لتغيّرات حالة كل طلب.
-
----
-
-## 2.3 إدارة الطوابير  
-### Queue Management
-
-### FR-009 – إضافة الطلبات المقبولة إلى الطابور  
-#### Queue Accepted Requests
-
-يجب أن يضع النظام الطلبات المقبولة في طابور الرسائل المناسب.
-
----
-
-### FR-010 – دعم عدة طوابير  
-#### Support Multiple Queues
-
-يجب أن يدعم النظام عدة طوابير لمعالجة أنواع الطلبات المختلفة أو مستويات الأولوية المختلفة.
-
----
-
-### FR-011 – الحفاظ على الطلبات  
-#### Preserve Requests
-
-يجب أن يضمن النظام عدم فقدان الطلبات المقبولة بسبب الانقطاعات المؤقتة في الخدمات.
-
----
-
-### FR-012 – تحديد أولويات الطلبات  
-#### Prioritize Requests
-
-يجب أن يدعم النظام معالجة الطلبات وفق مستويات أولوية محددة مسبقًا.
-
----
-
-## 2.4 معالجة الطلبات  
-### Request Processing
-
-### FR-013 – معالجة الطلبات  
-#### Process Requests
-
-يجب أن يسمح النظام لخدمات التنفيذ `Worker Services` باسترجاع الطلبات من الطوابير ومعالجتها.
-
----
-
-### FR-014 – ربط محاولة التنفيذ بطلب واحد  
-#### Execute One Request
-
-يجب أن يضمن النظام ارتباط كل محاولة معالجة بطلب واحد فقط.
-
----
-
-### FR-015 – تخزين نتيجة المعالجة  
-#### Store Processing Result
-
-يجب أن يخزن النظام النتيجة النهائية للمعالجة بعد انتهاء التنفيذ.
-
----
-
-### FR-016 – تعيين الطلبات الناجحة  
-#### Mark Successful Requests
-
-يجب أن يعيّن النظام الحالة `SUCCEEDED` بعد نجاح تنفيذ الطلب.
-
----
-
-### FR-017 – معالجة فشل التنفيذ  
-#### Handle Processing Failure
-
-يجب أن يعيّن النظام الحالة `FAILED` عند فشل إحدى محاولات معالجة الطلب.
-
----
-
-## 2.5 إدارة إعادة المحاولة  
-### Retry Management
-
-### FR-018 – إعادة محاولة الطلبات الفاشلة  
-#### Retry Failed Requests
-
-يجب أن يدعم النظام إعادة المحاولة تلقائيًا عند حدوث أخطاء معالجة قابلة للاسترداد.
-
----
-
-### FR-019 – تحديد الحد الأقصى للمحاولات  
-#### Retry Limit
-
-يجب أن يتوقف النظام عن إعادة المحاولة بعد بلوغ الحد الأقصى المحدد لعدد المحاولات.
-
----
-
-### FR-020 – نقل الطلبات إلى طابور الرسائل الميتة  
-#### Dead Letter Queue
-
-يجب أن ينقل النظام الطلبات التي تجاوزت حد إعادة المحاولة إلى طابور الرسائل الميتة  
-`Dead Letter Queue (DLQ)`.
-
----
-
-## 2.6 تتبع الطلبات  
-### Request Tracking
-
-### FR-021 – الاستعلام عن حالة الطلب  
-#### Query Request Status
-
-يجب أن يسمح النظام للأنظمة العميلة باسترجاع الحالة الحالية لطلب محدد.
-
----
-
-### FR-022 – الاستعلام عن تفاصيل الطلب  
-#### Query Request Details
-
-يجب أن يسمح النظام للمستخدمين المصرح لهم باسترجاع التفاصيل الكاملة لطلب محدد.
-
----
-
-### FR-023 – البحث في الطلبات  
-#### Search Requests
-
-يجب أن يدعم النظام البحث في الطلبات باستخدام معايير تصفية محددة مسبقًا.
-
----
-
-## 2.7 المراقبة  
-### Monitoring
-
-### FR-024 – جمع مؤشرات الأداء  
-#### Collect Metrics
-
-يجب أن يجمع النظام مؤشرات تشغيلية مرتبطة بالطلبات، والطوابير، ووحدات التنفيذ `Workers`.
-
----
-
-### FR-025 – إتاحة بيانات المراقبة  
-#### Expose Monitoring Data
-
-يجب أن يتيح النظام مؤشرات المراقبة لمنصات المراقبة الخارجية.
-
----
-
-## 2.8 إدارة إعدادات النظام  
-### Configuration Management
-
-### FR-026 – عرض إعدادات النظام  
-#### View System Configuration
-
-يجب أن يسمح النظام لمسؤول النظام بعرض الإعدادات التشغيلية القابلة للإدارة.
-
----
-
-### FR-027 – تعديل إعدادات النظام  
-#### Modify System Configuration
-
-يجب أن يسمح النظام لمسؤول النظام المخول بتعديل الإعدادات التشغيلية المدعومة.
-
----
-
-### FR-028 – التحقق من الإعدادات  
-#### Validate Configuration
-
-يجب أن يتحقق النظام من صحة قيم الإعدادات الجديدة قبل حفظها أو تطبيقها.
-
----
-
-### FR-029 – تسجيل تغييرات الإعدادات  
-#### Record Configuration Changes
-
-يجب أن يسجل النظام عمليات تعديل الإعدادات، مع تحديد وقت التعديل، والمستخدم المسؤول، والقيمة السابقة، والقيمة الجديدة.
-
----
-
-# 3. مصفوفة تتبع المتطلبات  
-## Requirement Traceability Matrix
-
-| المتطلبات | الوحدة المرتبطة |
-|---|---|
-| FR-001 إلى FR-005 | واجهة الطلبات `Request API` |
-| FR-006 إلى FR-008 | دورة حياة الطلب `Request Lifecycle` |
-| FR-009 إلى FR-012 | إدارة الطوابير `Queue Management` |
-| FR-013 إلى FR-017 | خدمة التنفيذ `Worker Service` |
-| FR-018 إلى FR-020 | إدارة إعادة المحاولة `Retry Manager` |
-| FR-021 إلى FR-023 | تتبع الطلبات `Request Tracking` |
-| FR-024 إلى FR-025 | المراقبة `Monitoring` |
-| FR-026 إلى FR-029 | إدارة الإعدادات `Configuration Management` |
+# المتطلبات الوظيفية
+
+تعكس المتطلبات التالية السلوك الموجود في الفرع الحالي.
+
+| المعرّف | المتطلب | موضع التنفيذ الرئيس |
+|---|---|---|
+| `FR-001` | يدعم النظام Register وLogin وRefresh Token | `AuthController` و`AuthenticationService` |
+| `FR-002` | يتحقق Gateway من JWT ويولد ترويسات الهوية الموثوقة | `JwtAuthenticationFilter` |
+| `FR-003` | يقبل طلبًا عامًا يحوي requestType وpayload مع Idempotency-Key | `RequestController` و`CreateRequestDto` |
+| `FR-004` | ينشئ Request ID فريدًا ويعيده إلى العميل | `RequestEntity` و`RequestResponseDto` |
+| `FR-005` | يطبق Idempotency ضمن نطاق المستخدم، ويعيد الطلب السابق عند التطابق | `RequestServiceImpl` وRedis services |
+| `FR-006` | يرفض إعادة المفتاح نفسه مع محتوى مختلف بـ409 | `IdempotencyConflictException` |
+| `FR-007` | يحفظ request وoutbox event داخل Transaction واحدة | `RequestCreationTransactionService` |
+| `FR-008` | يعيد 201 للطلب الجديد و200 للReplay مع Header يوضح النتيجة | `RequestController` |
+| `FR-009` | يسمح للمستخدم بقراءة طلب يملكه فقط | `findByIdAndUserId` و`CurrentUserProvider` |
+| `FR-010` | يسمح للمستخدم بعرض طلباته مع status وpagination | `getAllRequests` |
+| `FR-011` | يسمح للمسؤول بقراءة كل الطلبات بعد requireAdmin | `AdminRequestController` و`RoleAuthorizationService` |
+| `FR-012` | ينشر Outbox على دفعات مع Publisher Confirms | `OutboxEventProcessor` و`RequestEventPublisher` |
+| `FR-013` | يعيد الأحداث المتوقفة بعد Restart ويقيد عدد محاولات النشر | `OutboxEventTransactionService` |
+| `FR-014` | يستهلك Worker رسائل REQUEST_CREATED من Queue متينة | `RequestEventConsumer` |
+| `FR-015` | يمنع معالجة eventId نفسه مرتين | `IdempotentRequestProcessingService` و`processed_events` |
+| `FR-016` | يحدث الطلب وفق PENDING → PROCESSING → COMPLETED/FAILED | `RequestStatusTransactionService` |
+| `FR-017` | يعيد Listener المحاولة ثم يوجه الفشل النهائي إلى DLQ | Spring AMQP config و`RequestFailureMessageRecoverer` |
+| `FR-018` | يعمل Redis كمسار سريع مع حماية PostgreSQL عند تعذره | Redis services وUnique Constraints |
+| `FR-019` | يعرض Health وMetrics بتنسيق Prometheus | Actuator وMicrometer |
+| `FR-020` | يدعم تشغيل عدة Worker Replicas | `docker-compose.scaling-base.yml` |
+| `FR-021` | يربط Demo Client عبر واجهات HLRMS العامة دون دمجه في قلب النظام | `android-app/` وGateway routes |
+
+## قواعد القبول الأساسية
+
+- لا يقبل POST دون Idempotency-Key أو requestType أو payload.
+- لا يتجاوز Idempotency-Key مئة محرف، ولا يتجاوز payload عشرة آلاف محرف.
+- لا يستطيع المستخدم العادي قراءة طلب مستخدم آخر.
+- لا تعد الاستجابة Accepted كاملة قبل نجاح Transaction التي تضم request وoutbox event.
+- لا يعد الحدث معالجًا قبل تسجيله وتحديث الطلب داخل المسار المتين.
+- يجب أن يترك الفشل النهائي أثرًا قابلًا للتتبع في الطلب وDLQ.

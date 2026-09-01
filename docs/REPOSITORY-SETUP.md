@@ -40,7 +40,7 @@ git push -u origin develop
 - `worker`
 - `database`
 - `monitoring`
-- `android-demo`
+- `demo-client`
 - `load-testing`
 - `documentation`
 - `diagram`
