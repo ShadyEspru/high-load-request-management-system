@@ -4,7 +4,7 @@
 **Category:** Performance and Load Testing  
 **Tool:** k6  
 **Version:** 1.0  
-**Status:** In Progress  
+**Status:** Implemented
 
 ---
 
@@ -81,7 +81,7 @@ docs/testing/
 يتكون مجلد اختبارات k6 من الملفات التالية:
 
 ```text
-docs/testing/k6/
+tests/performance/k6/
 ├── README.md
 ├── config.js
 ├── helpers.js
@@ -151,7 +151,7 @@ thresholds.js
 مثال التشغيل:
 
 ```bash
-k6 run docs/testing/k6/smoke.js
+k6 run tests/performance/k6/smoke.js
 ```
 
 ---
@@ -171,7 +171,7 @@ k6 run docs/testing/k6/smoke.js
 مثال التشغيل:
 
 ```bash
-k6 run docs/testing/k6/load.js
+k6 run tests/performance/k6/load.js
 ```
 
 ---
@@ -191,7 +191,7 @@ k6 run docs/testing/k6/load.js
 مثال التشغيل:
 
 ```bash
-k6 run docs/testing/k6/stress.js
+k6 run tests/performance/k6/stress.js
 ```
 
 ---
@@ -211,7 +211,7 @@ k6 run docs/testing/k6/stress.js
 مثال التشغيل:
 
 ```bash
-k6 run docs/testing/k6/spike.js
+k6 run tests/performance/k6/spike.js
 ```
 
 ---
@@ -232,7 +232,7 @@ k6 run docs/testing/k6/spike.js
 مثال التشغيل:
 
 ```bash
-k6 run docs/testing/k6/soak.js
+k6 run tests/performance/k6/soak.js
 ```
 
 ---
@@ -266,7 +266,7 @@ Recovery Observation
 مثال التشغيل:
 
 ```bash
-k6 run docs/testing/k6/recovery.js
+k6 run tests/performance/k6/recovery.js
 ```
 
 ---
@@ -383,7 +383,7 @@ k6 version
 مثال:
 
 ```bash
-docker run --rm -i grafana/k6 run - < docs/testing/k6/smoke.js
+docker run --rm -i grafana/k6 run - < tests/performance/k6/smoke.js
 ```
 
 لكن عند استخدام ملفات JavaScript متعددة مترابطة، يفضل ربط مجلد المشروع داخل Container:
@@ -393,7 +393,7 @@ docker run --rm \
   -v "$(pwd):/project" \
   -w /project \
   grafana/k6 \
-  run docs/testing/k6/smoke.js
+  run tests/performance/k6/smoke.js
 ```
 
 ---
@@ -417,7 +417,7 @@ docker run --rm \
   -w /project \
   -e BASE_URL=http://api-gateway:8080 \
   grafana/k6 \
-  run docs/testing/k6/load.js
+  run tests/performance/k6/load.js
 ```
 
 ---
@@ -458,7 +458,7 @@ k6 run \
   -e BASE_URL=http://localhost:8080 \
   -e TEST_USERNAME=performance-user \
   -e TEST_PASSWORD=performance-password \
-  docs/testing/k6/smoke.js
+  tests/performance/k6/smoke.js
 ```
 
 ---
@@ -471,7 +471,7 @@ k6 run \
 k6 run \
   -e BASE_URL=http://localhost:8080 \
   -e AUTH_TOKEN="your-jwt-token" \
-  docs/testing/k6/load.js
+  tests/performance/k6/load.js
 ```
 
 عند وجود `AUTH_TOKEN`، يمكن للسكربت تجاوز عملية تسجيل الدخول حسب تنفيذ `helpers.js`.
@@ -487,7 +487,7 @@ export BASE_URL=http://localhost:8080
 export TEST_USERNAME=performance-user
 export TEST_PASSWORD=performance-password
 
-k6 run docs/testing/k6/load.js
+k6 run tests/performance/k6/load.js
 ```
 
 ---
@@ -501,7 +501,7 @@ $env:BASE_URL = "http://localhost:8080"
 $env:TEST_USERNAME = "performance-user"
 $env:TEST_PASSWORD = "performance-password"
 
-k6 run docs/testing/k6/load.js
+k6 run tests/performance/k6/load.js
 ```
 
 ---
@@ -539,7 +539,7 @@ export DEBUG=false
 ثم تشغيل Smoke Test:
 
 ```bash
-k6 run docs/testing/k6/smoke.js
+k6 run tests/performance/k6/smoke.js
 ```
 
 ---
@@ -600,7 +600,7 @@ POST /api/v1/auth/login
 ```bash
 k6 run \
   -e AUTH_TOKEN="your-jwt-token" \
-  docs/testing/k6/load.js
+  tests/performance/k6/load.js
 ```
 
 يفيد هذا الأسلوب في الحالات التالية:
@@ -1273,7 +1273,7 @@ export function parseJson(response) {
 تشغيل الاختبار محليًا:
 
 ```bash
-k6 run docs/testing/k6/smoke.js
+k6 run tests/performance/k6/smoke.js
 ```
 
 مع Environment Variables:
@@ -1283,7 +1283,7 @@ k6 run \
   -e BASE_URL=http://localhost:8080 \
   -e TEST_USERNAME=performance-user \
   -e TEST_PASSWORD=performance-password \
-  docs/testing/k6/smoke.js
+  tests/performance/k6/smoke.js
 ```
 
 ---
@@ -1295,7 +1295,7 @@ k6 run \
   -e BASE_URL=http://localhost:8080 \
   -e TEST_USERNAME=performance-user \
   -e TEST_PASSWORD=performance-password \
-  docs/testing/k6/load.js
+  tests/performance/k6/load.js
 ```
 
 ---
@@ -1307,7 +1307,7 @@ k6 run \
   -e BASE_URL=http://localhost:8080 \
   -e TEST_USERNAME=performance-user \
   -e TEST_PASSWORD=performance-password \
-  docs/testing/k6/stress.js
+  tests/performance/k6/stress.js
 ```
 
 ---
@@ -1319,7 +1319,7 @@ k6 run \
   -e BASE_URL=http://localhost:8080 \
   -e TEST_USERNAME=performance-user \
   -e TEST_PASSWORD=performance-password \
-  docs/testing/k6/spike.js
+  tests/performance/k6/spike.js
 ```
 
 ---
@@ -1331,7 +1331,7 @@ k6 run \
   -e BASE_URL=http://localhost:8080 \
   -e TEST_USERNAME=performance-user \
   -e TEST_PASSWORD=performance-password \
-  docs/testing/k6/soak.js
+  tests/performance/k6/soak.js
 ```
 
 ---
@@ -1343,7 +1343,7 @@ k6 run \
   -e BASE_URL=http://localhost:8080 \
   -e TEST_USERNAME=performance-user \
   -e TEST_PASSWORD=performance-password \
-  docs/testing/k6/recovery.js
+  tests/performance/k6/recovery.js
 ```
 
 ---
@@ -1355,7 +1355,7 @@ k6 run \
 ```bash
 k6 run \
   --summary-export=build/k6/load-summary.json \
-  docs/testing/k6/load.js
+  tests/performance/k6/load.js
 ```
 
 يجب إنشاء المجلد قبل التشغيل عند الحاجة:
@@ -1373,7 +1373,7 @@ mkdir -p build/k6
 ```bash
 k6 run \
   --out csv=build/k6/load-results.csv \
-  docs/testing/k6/load.js
+  tests/performance/k6/load.js
 ```
 
 ---
@@ -1385,7 +1385,7 @@ k6 run \
 ```bash
 k6 run \
   --out json=build/k6/load-results.json \
-  docs/testing/k6/load.js
+  tests/performance/k6/load.js
 ```
 
 قد يكون حجم الملف كبيرًا في الاختبارات الطويلة.
@@ -1397,7 +1397,7 @@ k6 run \
 ```bash
 k6 run \
   -e TEST_RUN_ID=load-local-001 \
-  docs/testing/k6/load.js
+  tests/performance/k6/load.js
 ```
 
 ---
@@ -1407,7 +1407,7 @@ k6 run \
 ```bash
 k6 run \
   -e DEBUG=true \
-  docs/testing/k6/smoke.js
+  tests/performance/k6/smoke.js
 ```
 
 يجب عدم استخدام Debug Logging في اختبارات الحمل الكبيرة إلا عند التحقيق في مشكلة محددة.
@@ -1421,7 +1421,7 @@ k6 run \
 ```bash
 k6 run \
   --exit-on-running \
-  docs/testing/k6/load.js
+  tests/performance/k6/load.js
 ```
 
 لكن سلوك الإيقاف الفعلي يعتمد على Threshold Configuration وطريقة تشغيل الاختبار.
@@ -1514,7 +1514,7 @@ Soak Test
 ```bash
 k6 run \
   --out experimental-prometheus-rw \
-  docs/testing/k6/load.js
+  tests/performance/k6/load.js
 ```
 
 تعتمد طريقة التصدير على البيئة والإصدار المستخدم من k6.
@@ -1924,7 +1924,7 @@ Deployment Decision
 k6 run \
   -e TEST_USERNAME="$TEST_USERNAME" \
   -e TEST_PASSWORD="$TEST_PASSWORD" \
-  docs/testing/k6/load.js
+  tests/performance/k6/load.js
 ```
 
 ---
@@ -2303,7 +2303,7 @@ messaging.js
 يوفر مجلد:
 
 ```text
-docs/testing/k6/
+tests/performance/k6/
 ```
 
 البنية الأساسية لاختبارات الأداء والحمل الخاصة بمشروع **High-Load Request Management System (HLRMS)** باستخدام k6.
@@ -2356,7 +2356,7 @@ docs/testing/k6/
 
 | Property | Value |
 |----------|-------|
-| Document | `docs/testing/k6/README.md` |
+| Document | `tests/performance/k6/README.md` |
 | Project | High-Load Request Management System |
 | Version | 1.0 |
 | Status | Approved |

@@ -520,7 +520,7 @@ Grafana Dashboards
 ينظم المشروع ملفات k6 بالشكل التالي:
 
 ```text
-docs/testing/k6/
+tests/performance/k6/
 
 ├── smoke.js
 ├── load.js

@@ -175,16 +175,21 @@ docs/testing/
 ├── INTEGRATION-TESTING.md
 ├── LOAD-TESTING.md
 ├── TEST-DATA.md
-├── TRACEABILITY-MATRIX.md
-└── k6/
-    ├── README.md
-    ├── create-request.js
-    ├── get-request-status.js
-    ├── mixed-workload.js
-    ├── stress-test.js
-    ├── spike-test.js
-    ├── soak-test.js
-    └── thresholds.js
+└── TRACEABILITY-MATRIX.md
+
+tests/performance/k6/
+├── README.md
+├── config.js
+├── helpers.js
+├── thresholds.js
+├── smoke.js
+├── baseline.js
+├── load.js
+├── stress.js
+├── spike.js
+├── soak.js
+├── recovery.js
+└── diagnostics/
 ```
 
 ---
@@ -215,9 +220,9 @@ docs/testing/
 
 يربط بين المتطلبات، Use Cases، API Endpoints، وحالات الاختبار.
 
-### `k6/`
+### `tests/performance/k6/`
 
-يحتوي سكربتات اختبارات الأداء والحمل.
+يحتوي سكربتات اختبارات الأداء والحمل القابلة للتنفيذ. أبقيت وثائق الاختبار داخل `docs/testing/`، بينما نُقلت ملفات التنفيذ إلى شجرة الاختبارات في جذر المستودع.
 
 ---
 

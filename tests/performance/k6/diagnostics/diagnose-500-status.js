@@ -3,7 +3,7 @@ import { Counter } from 'k6/metrics';
 import {
   createRequest,
   login,
-} from './helpers.js';
+} from '../helpers.js';
 
 const status0   = new Counter('status_0');
 const status201 = new Counter('status_201');

@@ -1,4 +1,4 @@
-import { login, createRequest } from './helpers.js';
+import { login, createRequest } from '../helpers.js';
 
 export const options = {
   scenarios: {
